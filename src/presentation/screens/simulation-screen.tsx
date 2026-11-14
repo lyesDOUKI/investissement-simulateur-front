@@ -1,175 +1,20 @@
-import { useMemo, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import {
-  ActionButton,
-  Card,
-  PageHeading,
-  Pill,
-  TextField,
-} from "@/presentation/components/investment-ui";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { Operation } from "@/domain/models/operation";
+import { Card, PageHeading, text } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
+import { formatDateLabel } from "@/presentation/utils/format-date";
 
-const euro = (amount: number) =>
-  `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-
-export function SimulationScreen({
-  onCreate,
-}: {
-  onCreate: (kind: "versement" | "dca") => void;
+export function SimulationScreen({ operations, onValue, onCompare }: {
+  operations: Operation[]; onValue: (operation: Operation) => void; onCompare: (operation: Operation) => void;
 }) {
-  const [kind, setKind] = useState<"versement" | "dca">("versement");
-  const [amount, setAmount] = useState("500");
-  const [years, setYears] = useState(5);
-  const projection = useMemo(() => {
-    const monthlyRate = 0.05 / 12;
-    const months = years * 12;
-    const monthly = Number(amount.replace(",", ".")) || 0;
-    const invested = kind === "dca" ? monthly * months : monthly;
-    const value =
-      kind === "dca"
-        ? monthly * (((1 + monthlyRate) ** months - 1) / monthlyRate)
-        : monthly * (1 + monthlyRate) ** months;
-    return { invested, value, gain: value - invested };
-  }, [amount, kind, years]);
-
-  return (
-    <>
-      <PageHeading
-        eyebrow="Se projeter"
-        title="Simuler"
-        subtitle="Comparez l’effet d’un versement ponctuel et d’un investissement régulier dans le temps."
-      />
-      <View style={styles.types}>
-        <Pill
-          label="Une fois"
-          active={kind === "versement"}
-          onPress={() => setKind("versement")}
-        />
-        <Pill
-          label="Tous les mois"
-          active={kind === "dca"}
-          onPress={() => setKind("dca")}
-        />
-      </View>
-      <Card style={styles.inputs}>
-        <TextField
-          label={kind === "dca" ? "Montant mensuel" : "Montant investi"}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="decimal-pad"
-          suffix={kind === "dca" ? "€ / mois" : "€"}
-        />
-        <View style={styles.durationHead}>
-          <Text style={styles.durationLabel}>Durée de placement</Text>
-          <Text style={styles.durationValue}>{years} ans</Text>
-        </View>
-        <View style={styles.durationControl}>
-          <Pill label="−" onPress={() => setYears(Math.max(1, years - 1))} />
-          <View style={styles.durationTrack}>
-            <View
-              style={[styles.durationFill, { width: `${(years / 20) * 100}%` }]}
-            />
-          </View>
-          <Pill label="＋" onPress={() => setYears(Math.min(20, years + 1))} />
-        </View>
-        <View style={styles.durationScale}>
-          <Text style={styles.scaleText}>1 an</Text>
-          <Text style={styles.scaleText}>20 ans</Text>
-        </View>
-      </Card>
-      <Card style={styles.result}>
-        <Text style={styles.resultCaption}>
-          Valeur estimée au bout de {years} ans
-        </Text>
-        <Text style={styles.resultValue}>{euro(projection.value)}</Text>
-        <Text style={styles.resultGain}>
-          +{euro(projection.gain)} de gain estimé
-        </Text>
-        <View style={styles.comparison}>
-          <Metric label="Total investi" value={euro(projection.invested)} />
-          <View style={styles.metricDivider} />
-          <Metric label="Rendement simulé" value="5 % / an" />
-        </View>
-      </Card>
-      <Text style={styles.note}>
-        Hypothèse constante de 5 % par an, intérêts composés mensuellement.
-        Cette projection illustrative ne prédit pas la performance réelle d’un
-        placement.
-      </Text>
-      <ActionButton
-        label={
-          kind === "dca" ? "Créer ce plan DCA  →" : "Préparer ce versement  →"
-        }
-        tone="light"
-        onPress={() => onCreate(kind)}
-      />
-    </>
-  );
+  return <>
+    <PageHeading eyebrow="Et si ?" title="Simuler un autre choix" subtitle="Partez d’un versement ou d’un plan réellement saisi, puis changez la date, le montant ou l’allocation." />
+    <Card style={styles.intro}><Text style={styles.introTitle}>Une simulation ancrée dans votre historique</Text><Text style={text.label}>La valorisation utilise les cours historiques disponibles. Un scénario alternatif reste temporaire et ne modifie jamais votre journal.</Text></Card>
+    <Text style={styles.label}>CHOISIR UNE OPÉRATION DE DÉPART</Text>
+    {operations.length === 0 ? <Card><Text style={text.label}>Enregistrez d’abord un versement ou un plan DCA.</Text></Card> : operations.map((operation) => <Card key={operation.id} style={styles.item}>
+      <View style={styles.row}><View style={styles.icon}><Text style={styles.iconText}>{operation.kind === "dca" ? "↻" : "↑"}</Text></View><View style={{flex:1,gap:4}}><Text style={styles.title}>{operation.label}</Text><Text style={styles.meta}>{formatDateLabel(operation.date)} · {operation.allocations.length} support{operation.allocations.length===1?"":"s"}</Text></View><Text style={styles.amount}>{operation.amount.toLocaleString("fr-FR")} €</Text></View>
+      <View style={styles.actions}><Pressable onPress={() => onValue(operation)}><Text style={styles.action}>Valoriser à une date →</Text></Pressable><Pressable onPress={() => onCompare(operation)}><Text style={styles.action}>Et si ? →</Text></Pressable></View>
+    </Card>)}
+  </>;
 }
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flex: 1, gap: 5 }}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  types: { flexDirection: "row", gap: 8, marginBottom: 13 },
-  inputs: { gap: 20, marginBottom: 14 },
-  durationHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  durationLabel: { color: p.ink, fontSize: 13, fontWeight: "600" },
-  durationValue: { color: p.forest, fontSize: 16, fontWeight: "700" },
-  durationControl: { flexDirection: "row", alignItems: "center", gap: 12 },
-  durationTrack: {
-    height: 6,
-    backgroundColor: p.line,
-    borderRadius: 5,
-    flex: 1,
-    overflow: "hidden",
-  },
-  durationFill: {
-    height: "100%",
-    backgroundColor: p.forestLight,
-    borderRadius: 5,
-  },
-  durationScale: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: -15,
-  },
-  scaleText: { color: p.muted, fontSize: 10 },
-  result: { backgroundColor: p.forest, borderColor: p.forest, gap: 7 },
-  resultCaption: { color: "#C8D7CF", fontSize: 12 },
-  resultValue: {
-    color: p.paper,
-    fontSize: 34,
-    fontWeight: "700",
-    letterSpacing: -0.7,
-    marginTop: 4,
-  },
-  resultGain: { color: p.mint, fontSize: 13, fontWeight: "700" },
-  comparison: {
-    borderTopWidth: 1,
-    borderColor: "#3B5B4F",
-    paddingTop: 16,
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  metricLabel: { color: "#C8D7CF", fontSize: 11 },
-  metricValue: { color: p.paper, fontSize: 14, fontWeight: "700" },
-  metricDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#3B5B4F",
-    marginHorizontal: 14,
-  },
-  note: { color: p.muted, fontSize: 11, lineHeight: 17, marginVertical: 14 },
-});
+const styles=StyleSheet.create({intro:{backgroundColor:p.softGreen,gap:8,marginBottom:22},introTitle:{color:p.forest,fontSize:15,fontWeight:"700"},label:{color:p.muted,fontSize:10,fontWeight:"800",letterSpacing:1.2,marginBottom:10},item:{gap:14,marginBottom:10},row:{flexDirection:"row",alignItems:"center",gap:11},icon:{width:38,height:38,borderRadius:14,backgroundColor:p.softGreen,alignItems:"center",justifyContent:"center"},iconText:{color:p.forest,fontSize:18,fontWeight:"700"},title:{color:p.ink,fontSize:14,fontWeight:"700"},meta:{color:p.muted,fontSize:12},amount:{color:p.ink,fontSize:13,fontWeight:"700"},actions:{borderTopWidth:1,borderColor:p.line,paddingTop:12,flexDirection:"row",justifyContent:"space-between",gap:10},action:{color:p.forest,fontSize:12,fontWeight:"700"}});

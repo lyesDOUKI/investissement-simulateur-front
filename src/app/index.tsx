@@ -1,23 +1,7 @@
 import { useEffect, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import type {
-  AllocationLine,
-  CreateOperationInput,
-  DcaFrequency,
-  Operation,
-  OperationKind,
-  Portfolio,
-  Security,
-} from "@/domain/models/operation";
-import { estimateOperationValueAtDate } from "@/domain/rules/estimate-operation-value";
+import type { AllocationLine, InvestmentComparison, InvestmentValuation, Operation, OperationKind, Portfolio, Security } from "@/domain/models/operation";
 import { dependencies } from "@/infrastructure/dependencies";
 import { DashboardScreen } from "@/presentation/screens/dashboard-screen";
 import { HistoryScreen } from "@/presentation/screens/history-screen";
@@ -25,433 +9,60 @@ import { InvestScreen } from "@/presentation/screens/invest-screen";
 import { InvestmentFormScreen } from "@/presentation/screens/investment-form-screen";
 import { SimulationScreen } from "@/presentation/screens/simulation-screen";
 import { ValuationScreen } from "@/presentation/screens/valuation-screen";
+import { ScenarioScreen } from "@/presentation/screens/scenario-screen";
 import { palette as p } from "@/presentation/theme";
 
-type MainPage = "dashboard" | "invest" | "simulation" | "history";
-type Page = MainPage | "form" | "valuation";
-type FormKind = "versement" | "dca";
-const today = () => new Date().toLocaleDateString("fr-FR");
-const parseAmount = (value: string) => Number(value.replace(",", ".")) || 0;
+type MainPage="dashboard"|"invest"|"simulation"|"history";
+type Page=MainPage|"form"|"valuation"|"scenario";
+type FormKind=OperationKind;
+const today=()=>new Date().toLocaleDateString("fr-FR");
+const parseAmount=(s:string)=>Number(s.replace(",", "."))||0;
+const newLine=(isin="FR0010380675",amount=0):AllocationLine=>({id:"line-"+Math.random().toString(36).slice(2),instrumentKind:"uc",isin,amount});
 
-export default function HomeScreen() {
-  const [page, setPage] = useState<Page>("dashboard");
-  const [returnPage, setReturnPage] = useState<MainPage>("invest");
-  const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
-  const [securities, setSecurities] = useState<Security[]>([]);
-  const [formKind, setFormKind] = useState<FormKind>("versement");
-  const [total, setTotal] = useState("500");
-  const [lines, setLines] = useState<AllocationLine[]>([]);
-  const [date, setDate] = useState(today());
-  const [frequency, setFrequency] = useState<DcaFrequency>("Mensuel");
-  const [executionDay, setExecutionDay] = useState(6);
-  const [selectedOperation, setSelectedOperation] = useState<Operation | null>(
-    null,
-  );
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
-  const refresh = async () => {
-    const [nextPortfolio, nextSecurities] = await Promise.all([
-      dependencies.getPortfolio.execute(),
-      dependencies.getSecurities.execute(),
-    ]);
-    setPortfolio(nextPortfolio);
-    setSecurities(nextSecurities);
-  };
-
-  useEffect(() => {
-    Promise.all([
-      dependencies.getPortfolio.execute(),
-      dependencies.getSecurities.execute(),
-    ]).then(([nextPortfolio, nextSecurities]) => {
-      setPortfolio(nextPortfolio);
-      setSecurities(nextSecurities);
-    });
-  }, []);
-
-  const startForm = (kind: FormKind, from: MainPage) => {
-    setFormKind(kind);
-    setReturnPage(from);
-    setTotal(kind === "dca" ? "300" : "500");
-    setLines([
-      {
-        id: `line-${Date.now()}`,
-        isin: "IE00B4L5Y983",
-        amount: kind === "dca" ? 300 : 500,
-      },
-    ]);
-    setDate(today());
-    setFrequency("Mensuel");
-    setExecutionDay(6);
-    setError("");
-    setNotice("");
-    setPage("form");
-  };
-
-  const startValuation = (operation: Operation, from: MainPage) => {
-    setSelectedOperation(operation);
-    setReturnPage(from);
-    setDate(today());
-    setError("");
-    setPage("valuation");
-  };
-
-  const changeTotal = (value: string) => {
-    setTotal(value);
-    const nextTotal = parseAmount(value);
-    setLines((current) => {
-      if (!current.length) return current;
-      const assigned = current
-        .slice(0, -1)
-        .reduce((sum, line) => sum + line.amount, 0);
-      const next = [...current];
-      next[next.length - 1] = {
-        ...next[next.length - 1],
-        amount: Math.max(0, Math.round((nextTotal - assigned) * 100) / 100),
-      };
-      return next;
-    });
-  };
-
-  const changeLineAmount = (id: string, value: string) => {
-    const amount = parseAmount(value);
-    const next = lines.map((line) =>
-      line.id === id ? { ...line, amount } : line,
-    );
-    setLines(next);
-    setTotal(
-      String(
-        Math.round(next.reduce((sum, line) => sum + line.amount, 0) * 100) /
-          100,
-      ),
-    );
-  };
-
-  const submitOperation = async (kind: OperationKind) => {
-    const amount =
-      kind === "valorisation"
-        ? (selectedOperation?.amount ?? 0)
-        : parseAmount(total);
-    const input: CreateOperationInput =
-      kind === "valorisation"
-        ? {
-            kind,
-            amount,
-            date,
-            allocations: selectedOperation?.allocations ?? [],
-            sourceOperationId: selectedOperation?.id,
-            valueAtDate: selectedOperation
-              ? estimateOperationValueAtDate(selectedOperation, date)
-              : amount,
-          }
-        : {
-            kind,
-            amount,
-            date,
-            allocations: lines,
-            ...(kind === "dca" ? { frequency, executionDay } : {}),
-          };
-    try {
-      const created = await dependencies.createOperation.execute(input);
-      await refresh();
-      setNotice(
-        kind === "valorisation"
-          ? `Valorisation enregistrée · ${created.date}`
-          : kind === "dca"
-            ? "Votre plan DCA est prêt."
-            : "Votre versement est enregistré.",
-      );
-      setPage("dashboard");
-      setError("");
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : "Vérifiez les informations saisies.",
-      );
-    }
-  };
-
-  const goTo = (destination: MainPage) => {
-    setPage(destination);
-    setNotice("");
-  };
-
-  const canShowTabs = page !== "form" && page !== "valuation";
-  const pageLabel: Record<MainPage, string> = {
-    dashboard: "Aperçu",
-    invest: "Investir",
-    simulation: "Simuler",
-    history: "Activité",
-  };
-
-  return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" />
-      {page !== "dashboard" &&
-      page !== "invest" &&
-      page !== "simulation" &&
-      page !== "history" ? (
-        <View style={styles.contextBar}>
-          <Pressable
-            onPress={() => setPage(returnPage)}
-            style={styles.backButton}
-          >
-            <Text style={styles.backIcon}>‹</Text>
-            <Text style={styles.backLabel}>Retour</Text>
-          </Pressable>
-          <Text style={styles.contextBrand}>
-            ALTO<Text style={{ color: p.forestLight }}>.</Text>
-          </Text>
-          <View style={{ width: 64 }} />
-        </View>
-      ) : null}
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.content,
-          ["form", "valuation", "invest", "simulation"].includes(page) &&
-            styles.contentNarrow,
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {portfolio ? (
-          <>
-            {page === "dashboard" ? (
-              <DashboardScreen
-                portfolio={portfolio}
-                securities={securities}
-                onInvest={() => goTo("invest")}
-                onHistory={() => goTo("history")}
-                onValue={(operation) => startValuation(operation, "dashboard")}
-              />
-            ) : null}
-            {page === "invest" ? (
-              <InvestScreen
-                onVersement={() => startForm("versement", "invest")}
-                onDca={() => startForm("dca", "invest")}
-              />
-            ) : null}
-            {page === "simulation" ? (
-              <SimulationScreen
-                onCreate={(kind) => startForm(kind, "simulation")}
-              />
-            ) : null}
-            {page === "history" ? (
-              <HistoryScreen
-                operations={portfolio.operations}
-                securities={securities}
-                onValue={(operation) => startValuation(operation, "history")}
-              />
-            ) : null}
-            {page === "form" ? (
-              <InvestmentFormScreen
-                kind={formKind}
-                total={total}
-                lines={lines}
-                securities={securities}
-                date={date}
-                frequency={frequency}
-                executionDay={executionDay}
-                error={error}
-                onTotalChange={changeTotal}
-                onLineChange={(id, isin) =>
-                  setLines((current) =>
-                    current.map((line) =>
-                      line.id === id ? { ...line, isin } : line,
-                    ),
-                  )
-                }
-                onLineAmountChange={changeLineAmount}
-                onAddLine={() =>
-                  setLines((current) =>
-                    current.length < 8
-                      ? [
-                          ...current,
-                          { id: `line-${Date.now()}`, isin: "", amount: 0 },
-                        ]
-                      : current,
-                  )
-                }
-                onRemoveLine={(id) => {
-                  const next = lines.filter((line) => line.id !== id);
-                  setLines(next);
-                  setTotal(
-                    String(next.reduce((sum, line) => sum + line.amount, 0)),
-                  );
-                }}
-                onDateChange={setDate}
-                onFrequencyChange={(value) => {
-                  setFrequency(value);
-                  setExecutionDay(value === "Hebdomadaire" ? 1 : 6);
-                }}
-                onExecutionDayChange={setExecutionDay}
-                onSubmit={() => void submitOperation(formKind)}
-              />
-            ) : null}
-            {page === "valuation" && selectedOperation ? (
-              <ValuationScreen
-                operation={selectedOperation}
-                securities={securities}
-                date={date}
-                error={error}
-                onDateChange={setDate}
-                onSave={() => void submitOperation("valorisation")}
-              />
-            ) : null}
-            {page === "dashboard" && notice ? (
-              <View style={styles.notice}>
-                <Text style={styles.noticeMark}>✓</Text>
-                <Text style={styles.noticeText}>{notice}</Text>
-                <Pressable onPress={() => setNotice("")}>
-                  <Text style={styles.noticeClose}>×</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </>
-        ) : (
-          <View style={styles.loading}>
-            <Text style={styles.contextBrand}>
-              ALTO<Text style={{ color: p.forestLight }}>.</Text>
-            </Text>
-            <Text style={styles.loadingText}>
-              Préparation de votre portefeuille…
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
-      {canShowTabs ? (
-        <View style={styles.tabBar}>
-          {(["dashboard", "invest", "simulation", "history"] as MainPage[]).map(
-            (destination) => {
-              const selected = page === destination;
-              const icon: Record<MainPage, string> = {
-                dashboard: "◫",
-                invest: "+",
-                simulation: "⌁",
-                history: "≡",
-              };
-              return (
-                <Pressable
-                  key={destination}
-                  onPress={() => goTo(destination)}
-                  style={styles.tab}
-                >
-                  <View
-                    style={[
-                      styles.tabIconWrap,
-                      selected && styles.tabIconSelected,
-                    ]}
-                  >
-                    <Text
-                      style={[styles.tabIcon, selected && styles.tabIconActive]}
-                    >
-                      {icon[destination]}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[styles.tabLabel, selected && styles.tabLabelActive]}
-                  >
-                    {pageLabel[destination]}
-                  </Text>
-                </Pressable>
-              );
-            },
-          )}
-        </View>
-      ) : null}
-    </SafeAreaView>
-  );
+export default function HomeScreen(){
+ const [page,setPage]=useState<Page>("dashboard");
+ const [returnPage,setReturnPage]=useState<MainPage>("invest");
+ const [portfolio,setPortfolio]=useState<Portfolio|null>(null);
+ const [securities,setSecurities]=useState<Security[]>([]);
+ const [formKind,setFormKind]=useState<FormKind>("versement");
+ const [total,setTotal]=useState("500");
+ const [lines,setLines]=useState<AllocationLine[]>([]);
+ const [date,setDate]=useState(today());
+ const [executionDay,setExecutionDay]=useState(10);
+ const [delay,setDelay]=useState(3);
+ const [selected,setSelected]=useState<Operation|null>(null);
+ const [valuation,setValuation]=useState<InvestmentValuation|null>(null);
+ const [comparison,setComparison]=useState<InvestmentComparison|null>(null);
+ const [error,setError]=useState("");
+ const refresh=async()=>{const [pData,sData]=await Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]);setPortfolio(pData);setSecurities(sData);};
+ useEffect(()=>{void Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]).then(([pData,sData])=>{setPortfolio(pData);setSecurities(sData);});},[]);
+ const goTo=(destination:MainPage)=>{setPage(destination);setError("");};
+ const startForm=(kind:FormKind,from:MainPage)=>{setFormKind(kind);setReturnPage(from);const amount=kind==="dca"?100:500;setTotal(String(amount));setLines([newLine("",amount)]);setDate(today());setExecutionDay(10);setDelay(3);setError("");setPage("form");};
+ const startValue=(operation:Operation,from:MainPage)=>{setSelected(operation);setDate(today());setValuation(null);setReturnPage(from);setError("");setPage("valuation");void dependencies.valueInvestment.execute(operation,today()).then(setValuation).catch((e)=>setError(e instanceof Error?e.message:"Valorisation impossible."));};
+ const startScenario=(operation:Operation,from:MainPage)=>{setSelected(operation);setReturnPage(from);setDate(today());setTotal(String(operation.amount));setLines(operation.allocations.map((line)=>({...line,id:newLine().id})));setComparison(null);setError("");setPage("scenario");};
+ const setTotalWithAllocation=(value:string)=>{setTotal(value);const amount=parseAmount(value);setLines((current)=>{if(!current.length)return current;const rest=current.slice(0,-1).reduce((sum,line)=>sum+line.amount,0);const next=[...current];next[next.length-1]={...next[next.length-1],amount:Math.max(0,Math.round((amount-rest)*100)/100)};return next;});};
+ const updateLine=(id:string,field:string,value:string)=>{const next=lines.map((line)=>line.id!==id?line:field==="amount"?{...line,amount:parseAmount(value)}:field==="instrumentKind"?{...line,instrumentKind:value as AllocationLine["instrumentKind"],isin:value==="uc"?"":line.isin}:field==="annualReturnPct"?{...line,annualReturnPct:parseAmount(value)}:field==="name"?{...line,name:value,isin:"FONDS-EURO"}:{...line,isin:value});setLines(next);if(field==="amount")setTotal(String(Math.round(next.reduce((s,x)=>s+x.amount,0)*100)/100));};
+ const submitOperation=async()=>{try{await dependencies.createOperation.execute({kind:formKind,amount:parseAmount(total),date,allocations:lines, ...(formKind==="dca"?{executionDay,delayBusinessDays:delay}:{})});await refresh();setPage(returnPage);setError("");}catch(e){setError(e instanceof Error?e.message:"Vérifiez les données saisies.");}};
+ const valueAtDate=async()=>{if(!selected)return;setError("");setValuation(null);try{setValuation(await dependencies.valueInvestment.execute(selected,date));}catch(e){setError(e instanceof Error?e.message:"Valorisation impossible.");}};
+ const compare=async()=>{if(!selected)return;setError("");try{setComparison(await dependencies.compareInvestment.execute(selected,{amount:parseAmount(total),allocations:lines,valuationDate:date}));}catch(e){setComparison(null);setError(e instanceof Error?e.message:"Comparaison impossible.");}};
+ const main=page==="dashboard"||page==="invest"||page==="simulation"||page==="history";
+ const labels:Record<MainPage,string>={dashboard:"Aperçu",invest:"Journal",simulation:"Simuler",history:"Activité"};
+ return <SafeAreaView style={styles.safe} edges={["top","bottom"]}><StatusBar barStyle="dark-content"/>
+  {!main?<View style={styles.context}><Pressable onPress={()=>setPage(returnPage)} style={styles.back}><Text style={styles.backText}>‹ Retour</Text></Pressable><Text style={styles.brand}>ALTO<Text style={{color:p.forestLight}}>.</Text></Text><View style={{width:60}}/></View>:null}
+  <ScrollView style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation"||page==="scenario"||page==="simulation")&&styles.narrow]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+   {!portfolio?<Text style={styles.loading}>Chargement…</Text>:<>
+    {page==="dashboard"?<DashboardScreen portfolio={portfolio} securities={securities} onInvest={()=>goTo("invest")} onHistory={()=>goTo("history")} onValue={(o)=>startValue(o,"dashboard")}/>:null}
+    {page==="invest"?<InvestScreen onVersement={()=>startForm("versement","invest")} onDca={()=>startForm("dca","invest")}/>:null}
+    {page==="simulation"?<SimulationScreen operations={portfolio.operations} onValue={(o)=>startValue(o,"simulation")} onCompare={(o)=>startScenario(o,"simulation")}/>:null}
+    {page==="history"?<HistoryScreen operations={portfolio.operations} securities={securities} onValue={(o)=>startValue(o,"history")} onCompare={(o)=>startScenario(o,"history")}/>:null}
+    {page==="form"?<InvestmentFormScreen kind={formKind} total={total} lines={lines} securities={securities} date={date} executionDay={executionDay} delayBusinessDays={delay} error={error}
+      onTotalChange={setTotalWithAllocation} onLineChange={updateLine} onAddLine={()=>setLines((v)=>v.length<8?[...v,newLine("",0)]:v)} onRemoveLine={(id)=>{const next=lines.filter(x=>x.id!==id);setLines(next);setTotal(String(next.reduce((s,x)=>s+x.amount,0)));}} onDateChange={setDate} onExecutionDayChange={setExecutionDay} onDelayChange={setDelay} onSubmit={()=>void submitOperation()}/>:null}
+    {page==="valuation"&&selected?<ValuationScreen operation={selected} date={date} result={valuation} error={error} onDateChange={(v)=>{setDate(v);setValuation(null);}} onValue={()=>void valueAtDate()} onCompare={()=>startScenario(selected,returnPage)}/>:null}
+    {page==="scenario"&&selected?<ScenarioScreen operation={selected} date={date} total={total} lines={lines} securities={securities} result={comparison} error={error}
+      onDateChange={(v)=>{setDate(v);setComparison(null);}} onTotalChange={(v)=>{setComparison(null);setTotalWithAllocation(v);}} onLineChange={(id,field,value)=>{setComparison(null);updateLine(id,field,value);}} onAddLine={()=>{setComparison(null);setLines((v)=>v.length<8?[...v,newLine("",0)]:v);}} onRemoveLine={(id)=>{setComparison(null);const next=lines.filter(x=>x.id!==id);setLines(next);setTotal(String(next.reduce((s,x)=>s+x.amount,0)));}} onCompare={()=>void compare()}/>:null}
+   </>}
+  </ScrollView>
+  {main?<View style={styles.tabs}>{(["dashboard","invest","simulation","history"] as MainPage[]).map((key)=>{const selectedTab=page===key;const symbols:Record<MainPage,string>={dashboard:"◫",invest:"＋",simulation:"⌁",history:"≡"};return <Pressable key={key} onPress={()=>goTo(key)} style={styles.tab}><Text style={[styles.symbol,selectedTab&&styles.active]}>{symbols[key]}</Text><Text style={[styles.tabLabel,selectedTab&&styles.active]}>{labels[key]}</Text></Pressable>;})}</View>:null}
+ </SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: p.canvas },
-  scroll: { flex: 1 },
-  content: {
-    width: "100%",
-    maxWidth: 1180,
-    alignSelf: "center",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  contentNarrow: { maxWidth: 700 },
-  contextBar: {
-    width: "100%",
-    maxWidth: 600,
-    alignSelf: "center",
-    height: 52,
-    paddingHorizontal: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: p.line,
-  },
-  backButton: {
-    minWidth: 64,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
-  backIcon: { color: p.forest, fontSize: 29, lineHeight: 31 },
-  backLabel: { color: p.forest, fontSize: 12, fontWeight: "700" },
-  contextBrand: {
-    color: p.ink,
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 2,
-  },
-  loading: {
-    flex: 1,
-    minHeight: 400,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  loadingText: { color: p.muted, fontSize: 13 },
-  notice: {
-    marginTop: 16,
-    padding: 13,
-    borderRadius: 14,
-    backgroundColor: p.softGreen,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  noticeMark: { color: p.forest, fontWeight: "800" },
-  noticeText: { color: p.forest, fontSize: 12, fontWeight: "600", flex: 1 },
-  noticeClose: { color: p.forest, fontSize: 18, paddingHorizontal: 4 },
-  tabBar: {
-    minHeight: 68,
-    borderTopWidth: 1,
-    borderTopColor: p.line,
-    backgroundColor: p.paper,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-around",
-    paddingHorizontal: 10,
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 3,
-    minHeight: 60,
-  },
-  tabIconWrap: {
-    width: 40,
-    height: 29,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabIconSelected: { backgroundColor: p.softGreen },
-  tabIcon: { color: p.muted, fontSize: 19, fontWeight: "700" },
-  tabIconActive: { color: p.forest },
-  tabLabel: { color: p.muted, fontSize: 10, fontWeight: "600" },
-  tabLabelActive: { color: p.forest, fontWeight: "800" },
-});
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:p.canvas},scroll:{flex:1},content:{width:"100%",maxWidth:1180,alignSelf:"center",paddingHorizontal:20,paddingTop:16,paddingBottom:24},narrow:{maxWidth:700},context:{height:52,maxWidth:700,width:"100%",alignSelf:"center",paddingHorizontal:20,flexDirection:"row",alignItems:"center",justifyContent:"space-between",borderBottomWidth:1,borderColor:p.line},back:{width:60},backText:{color:p.forest,fontSize:13,fontWeight:"700"},brand:{color:p.ink,fontSize:13,fontWeight:"800",letterSpacing:2},loading:{textAlign:"center",padding:80,color:p.muted},tabs:{minHeight:68,borderTopWidth:1,borderColor:p.line,backgroundColor:p.paper,flexDirection:"row",alignItems:"center",justifyContent:"space-around"},tab:{flex:1,alignItems:"center",justifyContent:"center",gap:3,minHeight:60},symbol:{color:p.muted,fontSize:19,fontWeight:"700"},tabLabel:{color:p.muted,fontSize:10,fontWeight:"600"},active:{color:p.forest,fontWeight:"800"}});

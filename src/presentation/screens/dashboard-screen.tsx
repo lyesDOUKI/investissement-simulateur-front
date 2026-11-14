@@ -36,20 +36,13 @@ export function DashboardScreen({
   const isWide = useWindowDimensions().width >= 960;
   const gainRate =
     portfolio.invested > 0 ? (portfolio.gain / portfolio.invested) * 100 : 0;
-  const contributed = portfolio.operations
-    .filter((item) => item.kind === "versement")
-    .reduce((total, item) => total + item.amount, 0);
+  const contributed = portfolio.valuations.reduce(
+    (sum, valuation) => sum + (portfolio.operations.find((item) => item.id === valuation.operationId)?.kind === "versement" ? valuation.invested : 0),
+    0,
+  );
   const allocations = new Map<string, number>();
-  portfolio.operations
-    .filter((item) => item.kind === "versement")
-    .forEach((item) =>
-      item.allocations.forEach((line) =>
-        allocations.set(
-          line.isin,
-          (allocations.get(line.isin) ?? 0) + line.amount,
-        ),
-      ),
-    );
+  portfolio.valuations.forEach((valuation) => valuation.allocations.forEach((line) =>
+    allocations.set(line.isin, (allocations.get(line.isin) ?? 0) + line.value)));
   const holdings = [...allocations.entries()].sort((a, b) => b[1] - a[1]);
   const plans = portfolio.operations.filter((item) => item.kind === "dca");
   const latestActivity = portfolio.operations[0];
@@ -59,11 +52,7 @@ export function DashboardScreen({
     month: "long",
   });
   const cycleLabel = (plan: Operation) =>
-    plan.frequency === "Hebdomadaire"
-      ? `Chaque ${["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"][(plan.executionDay ?? 1) - 1]}`
-      : plan.frequency === "Trimestriel"
-        ? "Tous les 3 mois"
-        : "Chaque mois";
+    `Chaque mois · prélèvement le ${plan.executionDay ?? 1} · décalage ${plan.delayBusinessDays ?? 0} jours ouvrés`;
 
   return (
     <>
@@ -93,7 +82,7 @@ export function DashboardScreen({
           <View style={styles.hero}>
             <View style={styles.heroTop}>
               <Text style={styles.heroLabel}>Valeur du portefeuille</Text>
-              <Text style={styles.period}>12 mois⌄</Text>
+              <Text style={styles.period}>À date⌄</Text>
             </View>
             <Text style={styles.heroValue}>{euro(portfolio.value)}</Text>
             <View style={styles.heroGainRow}>
@@ -103,31 +92,7 @@ export function DashboardScreen({
               </Text>
               <Text style={styles.heroFootnote}>depuis le début</Text>
             </View>
-            <View style={styles.chart}>
-              <Text style={styles.chartNote}>ÉVOLUTION ILLUSTRATIVE</Text>
-              <View style={styles.chartGrid} />
-              {[
-                0.25, 0.32, 0.28, 0.42, 0.39, 0.52, 0.48, 0.65, 0.61, 0.75, 0.7,
-                0.9, 0.86, 1,
-              ].map((height, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.chartBar,
-                    {
-                      height: `${height * 100}%`,
-                      opacity: 0.38 + index * 0.045,
-                    },
-                  ]}
-                />
-              ))}
-            </View>
-            <View style={styles.chartLabels}>
-              <Text style={styles.heroLabel}>DÉC. 25</Text>
-              <Text style={styles.heroLabel}>MARS 26</Text>
-              <Text style={styles.heroLabel}>JUIN 26</Text>
-              <Text style={styles.heroLabel}>NOV. 26</Text>
-            </View>
+            <Text style={styles.heroFootnote}>Valorisation indicative au {todayLabel}</Text>
             <View style={styles.heroDivider} />
             <View style={styles.metrics}>
               <Metric label="Capital versé" value={euro(portfolio.invested)} />
@@ -158,8 +123,8 @@ export function DashboardScreen({
             ) : (
               holdings.map(([isin, amount], index) => {
                 const security = securities.find((item) => item.isin === isin);
-                const percentage = portfolio.invested
-                  ? amount / portfolio.invested
+                const percentage = portfolio.value
+                  ? amount / portfolio.value
                   : 0;
                 return (
                   <View
@@ -208,7 +173,7 @@ export function DashboardScreen({
           style={[styles.secondaryColumn, isWide && styles.secondaryColumnWide]}
         >
           <SectionTitle
-            title="Investissement programmé"
+            title="Plans suivis"
             action={
               <Text style={styles.sectionHint}>
                 {plans.length} plan{plans.length > 1 ? "s" : ""}
@@ -224,19 +189,15 @@ export function DashboardScreen({
                 <View style={styles.planMain}>
                   <View style={styles.planHeading}>
                     <Text style={styles.planTitle}>
-                      Plan {plan.frequency?.toLowerCase() ?? "DCA"}
+                      Plan mensuel
                     </Text>
-                    <Text style={styles.planActive}>ACTIF</Text>
+                    <Text style={styles.planActive}>SUIVI</Text>
                   </View>
                   <Text style={styles.planAmount}>
                     {euro(plan.amount)}{" "}
                     <Text style={styles.planUnit}>
                       /{" "}
-                      {plan.frequency === "Hebdomadaire"
-                        ? "semaine"
-                        : plan.frequency === "Trimestriel"
-                          ? "trimestre"
-                          : "mois"}
+                      mois
                     </Text>
                   </Text>
                   <Text style={styles.planMeta}>
@@ -251,10 +212,10 @@ export function DashboardScreen({
           ) : (
             <Card>
               <Text style={text.label}>
-                Aucun plan automatique pour le moment.
+                Aucun plan DCA enregistré pour le moment.
               </Text>
               <Pressable onPress={onInvest}>
-                <Text style={styles.link}>Créer mon premier plan →</Text>
+                <Text style={styles.link}>Enregistrer mon premier plan →</Text>
               </Pressable>
             </Card>
           )}
@@ -270,19 +231,13 @@ export function DashboardScreen({
           {latestActivity ? (
             <Pressable
               onPress={() =>
-                latestActivity.kind === "valorisation"
-                  ? onHistory()
-                  : onValue(latestActivity)
+                onValue(latestActivity)
               }
             >
               <Card style={styles.activityCard}>
                 <View style={styles.activityIcon}>
                   <Text style={styles.activityIconText}>
-                    {latestActivity.kind === "dca"
-                      ? "↻"
-                      : latestActivity.kind === "valorisation"
-                        ? "◷"
-                        : "↑"}
+                    {latestActivity.kind === "dca" ? "↻" : "↑"}
                   </Text>
                 </View>
                 <View style={styles.activityMain}>
@@ -295,14 +250,14 @@ export function DashboardScreen({
                   </Text>
                 </View>
                 <Text style={styles.activityAmount}>
-                  {euro(latestActivity.valueAtDate ?? latestActivity.amount)}
+                  {euro(latestActivity.amount)}
                 </Text>
               </Card>
             </Pressable>
           ) : null}
           <Text style={styles.disclaimer}>
-            Valeurs de démonstration. Les rendements affichés sont fictifs et ne
-            constituent pas un conseil en investissement.
+            Valeurs et cours historiques de démonstration. Cette application
+            suit et simule vos opérations sans transmettre d’ordre au courtier.
           </Text>
         </View>
       </View>

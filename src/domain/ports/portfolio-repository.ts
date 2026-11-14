@@ -1,12 +1,11 @@
 import type {
   CreateOperationInput,
   Operation,
-  Portfolio,
   Security,
 } from "../models/operation";
 
 export interface PortfolioRepository {
-  getPortfolio(): Promise<Portfolio>;
+  getOperations(): Promise<Operation[]>;
   getSecurities(): Promise<Security[]>;
   addOperation(input: CreateOperationInput): Promise<Operation>;
 }

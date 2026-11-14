@@ -17,8 +17,8 @@ export function InvestScreen({
     <>
       <PageHeading
         eyebrow="À vous de choisir"
-        title="Investir"
-        subtitle="Commencez par choisir comment vous souhaitez investir. Vos allocations se définissent à l’étape suivante."
+        title="Enregistrer"
+        subtitle="Choisissez ce que vous voulez ajouter à votre journal. Vos allocations se définissent à l’étape suivante."
       />
       <Pressable onPress={onVersement}>
         <Card style={styles.choice}>
@@ -28,7 +28,7 @@ export function InvestScreen({
           <View style={styles.choiceMain}>
             <Text style={styles.choiceTitle}>Versement ponctuel</Text>
             <Text style={text.label}>
-              Investissez un montant en une seule fois, réparti entre un ou
+              Enregistrez un versement déjà réalisé, réparti entre un ou
               plusieurs supports.
             </Text>
             <Text style={styles.choiceMeta}>
@@ -46,11 +46,11 @@ export function InvestScreen({
           <View style={styles.choiceMain}>
             <Text style={styles.choiceTitle}>Plan d’investissement</Text>
             <Text style={text.label}>
-              Investissez automatiquement à intervalles réguliers et lissez
-              votre effort dans le temps.
+              Enregistrez les paramètres du plan DCA que vous suivez chez votre
+              courtier, puis rejouez ses échéances.
             </Text>
             <Text style={styles.choiceMeta}>
-              Hebdo, mensuel ou trimestriel · Modifiable
+              Mensuel · date et délai ouvré configurables
             </Text>
           </View>
           <Text style={styles.arrow}>↗</Text>
@@ -59,8 +59,8 @@ export function InvestScreen({
       <View style={styles.info}>
         <Text style={styles.infoTitle}>Une allocation qui vous ressemble</Text>
         <Text style={styles.infoBody}>
-          À l’étape suivante, ajoutez autant de lignes que nécessaire avec
-          l’ISIN et le montant souhaité pour chaque support.
+          À l’étape suivante, répartissez le montant entre plusieurs supports
+          avec leur ISIN ou un fonds euro.
         </Text>
       </View>
       <View style={styles.trust}>
