@@ -34,16 +34,9 @@ export function DashboardScreen({
   onValue: (operation: Operation) => void;
 }) {
   const isWide = useWindowDimensions().width >= 960;
-  const gainRate =
-    portfolio.invested > 0 ? (portfolio.gain / portfolio.invested) * 100 : 0;
-  const contributed = portfolio.valuations.reduce(
-    (sum, valuation) => sum + (portfolio.operations.find((item) => item.id === valuation.operationId)?.kind === "versement" ? valuation.invested : 0),
-    0,
-  );
-  const allocations = new Map<string, number>();
-  portfolio.valuations.forEach((valuation) => valuation.allocations.forEach((line) =>
-    allocations.set(line.isin, (allocations.get(line.isin) ?? 0) + line.value)));
-  const holdings = [...allocations.entries()].sort((a, b) => b[1] - a[1]);
+  const gainRate = portfolio.gainRatePct;
+  const contributed = portfolio.oneOffInvested;
+  const holdings = portfolio.holdings;
   const plans = portfolio.operations.filter((item) => item.kind === "dca");
   const latestActivity = portfolio.operations[0];
   const todayLabel = new Date().toLocaleDateString("fr-FR", {
@@ -82,7 +75,7 @@ export function DashboardScreen({
           <View style={styles.hero}>
             <View style={styles.heroTop}>
               <Text style={styles.heroLabel}>Valeur du portefeuille</Text>
-              <Text style={styles.period}>À date⌄</Text>
+              <Text style={styles.period}>{formatDateLabel(portfolio.asOfDate)}</Text>
             </View>
             <Text style={styles.heroValue}>{euro(portfolio.value)}</Text>
             <View style={styles.heroGainRow}>
@@ -121,14 +114,11 @@ export function DashboardScreen({
                 Vos allocations apparaîtront ici après votre premier versement.
               </Text>
             ) : (
-              holdings.map(([isin, amount], index) => {
-                const security = securities.find((item) => item.isin === isin);
-                const percentage = portfolio.value
-                  ? amount / portfolio.value
-                  : 0;
+              holdings.map((holding, index) => {
+                const security = securities.find((item) => item.isin === holding.isin);
                 return (
                   <View
-                    key={isin}
+                    key={holding.isin}
                     style={index > 0 ? styles.holdingSpaced : undefined}
                   >
                     {index > 0 ? <Divider /> : null}
@@ -136,19 +126,19 @@ export function DashboardScreen({
                       <View
                         style={[
                           styles.holdingDot,
-                          { backgroundColor: security?.color ?? p.muted },
+                          { backgroundColor: holding.color ?? security?.color ?? p.muted },
                         ]}
                       />
                       <View style={styles.holdingTitle}>
                         <Text style={styles.holdingName}>
-                          {security?.shortName ?? isin}
+                          {security?.shortName ?? holding.name}
                         </Text>
-                        <Text style={styles.holdingIsin}>{isin}</Text>
+                        <Text style={styles.holdingIsin}>{holding.isin}</Text>
                       </View>
                       <View style={styles.holdingValue}>
-                        <Text style={styles.holdingAmount}>{euro(amount)}</Text>
+                        <Text style={styles.holdingAmount}>{euro(holding.value)}</Text>
                         <Text style={styles.holdingPercent}>
-                          {(percentage * 100).toFixed(1).replace(".", ",")} %
+                          {holding.sharePct.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %
                         </Text>
                       </View>
                     </View>
@@ -157,8 +147,8 @@ export function DashboardScreen({
                         style={[
                           styles.trackFill,
                           {
-                            width: `${Math.max(percentage * 100, 3)}%`,
-                            backgroundColor: security?.color ?? p.forestLight,
+                            width: `${holding.sharePct}%`,
+                            backgroundColor: holding.color ?? security?.color ?? p.forestLight,
                           },
                         ]}
                       />

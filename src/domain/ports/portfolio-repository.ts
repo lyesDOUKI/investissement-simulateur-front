@@ -1,11 +1,19 @@
 import type {
   CreateOperationInput,
+  InvestmentComparison,
+  InvestmentValuation,
   Operation,
+  Portfolio,
+  ScenarioInput,
   Security,
+  ValueOperationInput,
 } from "../models/operation";
 
+/** Port for the future backend API. All investment calculations live behind it. */
 export interface PortfolioRepository {
-  getOperations(): Promise<Operation[]>;
+  getPortfolio(asOfDate: string): Promise<Portfolio>;
   getSecurities(): Promise<Security[]>;
-  addOperation(input: CreateOperationInput): Promise<Operation>;
+  createOperation(input: CreateOperationInput): Promise<Operation>;
+  valueOperation(operationId: string, input: ValueOperationInput): Promise<InvestmentValuation>;
+  compareOperation(operationId: string, input: ScenarioInput): Promise<InvestmentComparison>;
 }

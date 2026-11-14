@@ -18,6 +18,7 @@ export interface Security {
   instrumentKind: InstrumentKind;
 }
 
+/** User-entered facts and plan parameters. This is never an order. */
 export interface Operation {
   id: string;
   kind: OperationKind;
@@ -28,15 +29,10 @@ export interface Operation {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
+  annualReturnPct?: number;
 }
 
-export interface HistoricalPrice {
-  isin: string;
-  date: string;
-  price: number;
-  currency: string;
-}
-
+/** Backend response DTO for a valuation; the front only renders these fields. */
 export interface ValuedAllocation {
   instrumentKind: InstrumentKind;
   isin: string;
@@ -72,18 +68,33 @@ export interface InvestmentValuation {
   invested: number;
   value: number;
   gain: number;
+  gainRatePct: number;
   installmentCount: number;
   installments: InstallmentValuation[];
   allocations: ValuedAllocation[];
   hasMissingPrices: boolean;
+  assumptionPct?: number;
 }
 
+export interface PortfolioHolding {
+  isin: string;
+  name: string;
+  value: number;
+  sharePct: number;
+  color: string;
+}
+
+/** Complete portfolio response returned by the application backend. */
 export interface Portfolio {
+  asOfDate: string;
   invested: number;
   value: number;
   gain: number;
+  gainRatePct: number;
+  oneOffInvested: number;
   operations: Operation[];
   valuations: InvestmentValuation[];
+  holdings: PortfolioHolding[];
 }
 
 export interface CreateOperationInput {
@@ -93,12 +104,19 @@ export interface CreateOperationInput {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
+  annualReturnPct?: number;
+}
+
+export interface ValueOperationInput {
+  valuationDate: string;
+  annualReturnPct?: number;
 }
 
 export interface ScenarioInput {
   amount: number;
   allocations: AllocationLine[];
   valuationDate: string;
+  annualReturnPct?: number;
 }
 
 export interface InvestmentComparison {

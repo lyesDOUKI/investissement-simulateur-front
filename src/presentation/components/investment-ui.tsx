@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { palette as p, radius } from "@/presentation/theme";
 
 export function PageHeading({
@@ -55,23 +55,25 @@ export function ActionButton({
   onPress,
   tone = "dark",
   disabled = false,
+  loading = false,
 }: {
   label: string;
   onPress: () => void;
   tone?: "dark" | "light" | "quiet";
   disabled?: boolean;
+  loading?: boolean;
 }) {
   return (
     <Pressable
-      disabled={disabled}
+      disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         ui.action,
         tone === "dark" && ui.actionDark,
         tone === "light" && ui.actionLight,
         tone === "quiet" && ui.actionQuiet,
-        disabled && ui.actionDisabled,
-        pressed && !disabled && { opacity: 0.78, transform: [{ scale: 0.99 }] },
+        (disabled || loading) && ui.actionDisabled,
+        pressed && !disabled && !loading && { opacity: 0.78, transform: [{ scale: 0.99 }] },
       ]}
     >
       <Text
@@ -79,10 +81,10 @@ export function ActionButton({
           ui.actionText,
           tone === "light" && ui.actionTextLight,
           tone === "quiet" && ui.actionTextQuiet,
-          disabled && { color: p.muted },
+          (disabled || loading) && { color: p.muted },
         ]}
       >
-        {label}
+        {loading ? <View style={ui.loadingContent}><ActivityIndicator size="small" color={tone === "dark" ? p.paper : p.forest} /><Text style={[ui.actionText, tone === "light" && ui.actionTextLight, tone === "quiet" && ui.actionTextQuiet]}>Traitement…</Text></View> : label}
       </Text>
     </Pressable>
   );
@@ -209,6 +211,7 @@ const ui = StyleSheet.create({
   actionLight: { backgroundColor: p.mint },
   actionQuiet: { backgroundColor: p.softGreen },
   actionDisabled: { backgroundColor: "#E8ECE7" },
+  loadingContent: { flexDirection: "row", alignItems: "center", gap: 9 },
   actionText: { color: p.paper, fontSize: 15, fontWeight: "700" },
   actionTextLight: { color: p.forest },
   actionTextQuiet: { color: p.forest },
