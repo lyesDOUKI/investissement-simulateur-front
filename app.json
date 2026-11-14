@@ -1,18 +1,15 @@
 {
   "expo": {
-    "name": "investissement-simulateur-front",
+    "name": "Alto",
     "slug": "investissement-simulateur-front",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "investissementsimulateurfront",
-    "userInterfaceStyle": "dark",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
+    "userInterfaceStyle": "light",
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0B0E12",
+        "backgroundColor": "#173D32",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -28,7 +25,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0B0E12",
+          "backgroundColor": "#F3F5F1",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
