@@ -1,56 +1,36 @@
-# Welcome to your Expo app 👋
+# Investissement · Simulateur
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Application mobile et web Expo / React Native pour simuler des investissements programmés et suivre les opérations d'une session.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Démarrer
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Utilisez `npx expo start --web` pour la version navigateur. Expo Router sert les mêmes écrans sur iOS, Android et le web.
 
-### Other setup steps
+## Parcours V0
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+- Créer un versement unique.
+- Créer un plan DCA avec montant, jour, fréquence et allocation fictive.
+- Simuler un versement ou un plan DCA.
+- Valoriser une opération existante à une date choisie.
+- Consulter les opérations créées pendant la session.
 
-## Learn more
+Les valeurs et rendements sont fictifs. Les opérations sont conservées en mémoire et réinitialisées au rechargement de l'application.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Architecture
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `src/domain` contient les modèles métier et le port `PortfolioRepository`, sans dépendance à Expo ou React Native.
+- `src/application` contient les cas d'usage et la validation métier.
+- `src/infrastructure/fake` fournit le repository fictif, injecté dans les cas d'usage par `src/infrastructure/dependencies.ts`.
+- `src/app` contient l'interface Expo Router et les parcours de présentation.
 
-## Join the community
+## Qualité
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo lint
+npx tsc --noEmit
+```
