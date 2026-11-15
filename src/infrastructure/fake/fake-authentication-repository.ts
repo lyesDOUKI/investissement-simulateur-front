@@ -5,12 +5,12 @@ export const demoAccount: UserAccount = {
   id: "demo-jean",
   firstName: "Jean",
   lastName: "Dupont",
-  email: "jean.dupont@alto-demo.fr",
+  email: "test@test.fr",
   phone: "+33 6 12 34 56 78",
   createdAt: "15/08/2026",
 };
 
-const demoPassword = "JeanAlto2026!";
+const demoPassword = "test";
 const waitForDemoResponse = () => new Promise<void>((resolve) => setTimeout(resolve, 650));
 
 export class FakeAuthenticationRepository implements AuthenticationRepository {

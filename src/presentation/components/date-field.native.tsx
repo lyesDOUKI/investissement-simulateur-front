@@ -17,13 +17,9 @@ export function DateField({ label, value, onChange, helper }: {
     title: "Choisir une date",
     positiveButton: { label: "Valider" },
     negativeButton: { label: "Annuler" },
-    onChange: (event, selectedDate) => {
-      if (event.type === "set" && selectedDate) onChange(formatDateValue(selectedDate));
-    },
+    onValueChange: (_event, selectedDate) => onChange(formatDateValue(selectedDate)),
   });
-  const onDateChange = (_event: unknown, selectedDate?: Date) => {
-    if (selectedDate) onChange(formatDateValue(selectedDate));
-  };
+  const onDateChange = (_event: unknown, selectedDate: Date) => onChange(formatDateValue(selectedDate));
 
   return <View style={styles.wrap}>
     <Text style={styles.label}>{label}</Text>
@@ -36,7 +32,7 @@ export function DateField({ label, value, onChange, helper }: {
         themeVariant="dark"
         accentColor={p.forestLight}
         accessibilityLabel={label}
-        onChange={onDateChange}
+        onValueChange={onDateChange}
       />
     </View> : <Pressable onPress={openAndroidPicker} accessibilityRole="button" accessibilityLabel={`${label}, ${value}. Ouvrir le calendrier.`} style={styles.field}>
       <Text style={styles.value}>{value}</Text>
