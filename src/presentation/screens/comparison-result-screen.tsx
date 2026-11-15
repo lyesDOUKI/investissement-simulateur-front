@@ -16,8 +16,8 @@ export function ComparisonResultScreen({ operation, scenario, result, onAdjust }
   return <>
     <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Même date cible pour A et B : " + formatDateLabel(result.original.valuationDate) + " · résultats retournés par le service."} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
-      <ScenarioCard title="A · Plan de référence" details={operationDetails(operation)} valuation={result.original} />
-      <ScenarioCard title="B · Plan alternatif" details={scenarioDetails(operation, scenario)} valuation={result.alternative} highlighted />
+      <ScenarioCard title="A · Plan de référence" details={operationDetails(operation)} valuation={result.original} isDca={operation.kind === "dca"} />
+      <ScenarioCard title="B · Plan alternatif" details={scenarioDetails(operation, scenario)} valuation={result.alternative} isDca={operation.kind === "dca"} highlighted />
     </View>
     <SectionTitle title="Écart · B par rapport à A" />
     <Card style={styles.difference}>
@@ -33,10 +33,11 @@ export function ComparisonResultScreen({ operation, scenario, result, onAdjust }
   </>;
 }
 
-function ScenarioCard({ title, details, valuation, highlighted = false }: {
+function ScenarioCard({ title, details, valuation, isDca, highlighted = false }: {
   title: string;
   details: string[];
   valuation: InvestmentComparison["original"];
+  isDca: boolean;
   highlighted?: boolean;
 }) {
   return <Card style={[styles.scenario, highlighted && styles.scenarioHighlighted]}>
@@ -49,7 +50,7 @@ function ScenarioCard({ title, details, valuation, highlighted = false }: {
     <DifferenceRow label="Capital investi" value={valuation.invested} />
     <DifferenceRow label="Gain / perte" value={valuation.gain} />
     {valuation.assumptionPct !== undefined ? <DifferenceRow label="Hypothèse annuelle" suffix=" %" value={valuation.assumptionPct} /> : null}
-    <Text style={styles.meta}>{valuation.installmentCount} échéances reçues</Text>
+    {isDca ? <Text style={styles.meta}>{valuation.installmentCount} échéance{valuation.installmentCount === 1 ? "" : "s"} reçue{valuation.installmentCount === 1 ? "" : "s"}</Text> : null}
     {valuation.allocations.map((allocation) => <View key={allocation.isin} style={styles.allocation}>
       <Text style={styles.meta}>{allocation.name}</Text>
       <Text style={styles.meta}>{euro(allocation.value)}</Text>
@@ -94,14 +95,14 @@ const styles = StyleSheet.create({
   scenario: { flex: 1, gap: 9 },
   scenarioHighlighted: { borderColor: p.forestLight, borderWidth: 1.5 },
   scenarioTitle: { color: p.ink, fontSize: 15, fontWeight: "700" },
-  value: { color: p.forest, fontSize: 29, fontWeight: "700", letterSpacing: -0.5 },
+  value: { color: p.forestLight, fontSize: 29, fontWeight: "700", letterSpacing: -0.5 },
   meta: { color: p.muted, fontSize: 12, lineHeight: 17 },
   rule: { height: 1, backgroundColor: p.line, marginVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   rowValue: { color: p.ink, fontSize: 13, fontWeight: "700" },
   allocation: { flexDirection: "row", justifyContent: "space-between", gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
   difference: { backgroundColor: p.softGreen, gap: 13 },
-  hint: { color: p.forest, fontSize: 11, lineHeight: 16, marginTop: 2 },
+  hint: { color: p.forestLight, fontSize: 11, lineHeight: 16, marginTop: 2 },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 14 },
   footer: { marginTop: 16 },
 });

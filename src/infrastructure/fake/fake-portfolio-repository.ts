@@ -47,6 +47,12 @@ const genericValuation: InvestmentValuation = {
   installments: [{ dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 500, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 500, shares: 0.1665, purchasePrice: 3003, purchasePriceDate: "13/11/2026", status: "cours-demo" }] }],
 };
 
+const genericOneOffValuation: InvestmentValuation = {
+  ...genericValuation,
+  installmentCount: 0,
+  installments: [],
+};
+
 const demoPortfolio: Portfolio = {
   asOfDate: "14/11/2026", invested: 300, value: 289.96, gain: -10.04,
   gainRatePct: -3.35, oneOffInvested: 0,
@@ -62,6 +68,13 @@ const demoAlternative: InvestmentValuation = {
   value: 426.8,
   gain: 26.8,
   gainRatePct: 6.7,
+  installmentCount: 4,
+  installments: [
+    { dueDate: "10/08/2026", executionDate: "13/08/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.0331, purchasePrice: 3021.15, purchasePriceDate: "13/08/2026", status: "cours-demo" }] },
+    { dueDate: "10/09/2026", executionDate: "15/09/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.03168, purchasePrice: 3156.53, purchasePriceDate: "15/09/2026", status: "cours-demo" }] },
+    { dueDate: "10/10/2026", executionDate: "14/10/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031594, purchasePrice: 3165.08, purchasePriceDate: "14/10/2026", status: "cours-demo" }] },
+    { dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.033309, purchasePrice: 3002.18, purchasePriceDate: "13/11/2026", status: "cours-demo" }] },
+  ],
   allocations: [{
     instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World",
     invested: 400, shares: 0.1387, averagePurchasePrice: 2883.92,
@@ -84,6 +97,12 @@ const genericAlternative: InvestmentValuation = {
     observedPrice: 3074.77, observedDate: "14/11/2026", value: 426.8,
     gain: 26.8, status: "cours-demo",
   }],
+};
+
+const genericOneOffAlternative: InvestmentValuation = {
+  ...genericAlternative,
+  installmentCount: 0,
+  installments: [],
 };
 
 const waitForDemoResponse = () => new Promise<void>((resolve) => setTimeout(resolve, 650));
@@ -118,14 +137,22 @@ export class FakePortfolioRepository implements PortfolioRepository {
 
   async valueOperation(operationId: string, input: ValueOperationInput): Promise<InvestmentValuation> {
     await waitForDemoResponse();
-    const fixture = operationId === demoPlan.id ? consoleLogResponse : genericValuation;
+    const operation = this.operations.find((item) => item.id === operationId);
+    const fixture = operationId === demoPlan.id
+      ? consoleLogResponse
+      : operation?.kind === "versement" ? genericOneOffValuation : genericValuation;
     return { ...fixture, operationId, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct };
   }
 
   async compareOperation(operationId: string, input: ScenarioInput): Promise<InvestmentComparison> {
     await waitForDemoResponse();
-    const original = operationId === demoPlan.id ? consoleLogResponse : genericValuation;
-    const alternative = operationId === demoPlan.id ? demoAlternative : genericAlternative;
+    const operation = this.operations.find((item) => item.id === operationId);
+    const original = operationId === demoPlan.id
+      ? consoleLogResponse
+      : operation?.kind === "versement" ? genericOneOffValuation : genericValuation;
+    const alternative = operationId === demoPlan.id
+      ? demoAlternative
+      : operation?.kind === "versement" ? genericOneOffAlternative : genericAlternative;
     return {
       original: { ...original, valuationDate: input.valuationDate },
       alternative: { ...alternative, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct },

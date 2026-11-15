@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { color: p.forest, fontSize: 11, fontWeight: "700" },
+  avatarText: { color: p.forestLight, fontSize: 11, fontWeight: "700" },
   hero: {
     backgroundColor: p.forest,
     borderRadius: 26,
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   heroLabel: { color: "#B6C9BF", fontSize: 11, fontWeight: "600" },
   period: {
-    color: p.paper,
+    color: p.onForest,
     borderColor: "#46695C",
     borderWidth: 1,
     borderRadius: 20,
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   heroValue: {
-    color: p.paper,
+    color: p.onForest,
     fontSize: 38,
     fontWeight: "700",
     letterSpacing: -1.1,
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   metrics: { flexDirection: "row", alignItems: "center" },
   metric: { flex: 1, gap: 6 },
   metricLabel: { color: "#B6C9BF", fontSize: 11 },
-  metricValue: { color: p.paper, fontSize: 15, fontWeight: "700" },
+  metricValue: { color: p.onForest, fontSize: 15, fontWeight: "700" },
   metricDivider: {
     width: 1,
     height: 32,
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: p.softGreen,
   },
-  historyButtonText: { color: p.forest, fontSize: 13, fontWeight: "700" },
+  historyButtonText: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
   sectionHint: { color: p.muted, fontSize: 12 },
   holdingRow: {
     flexDirection: "row",
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  planIconText: { color: p.forest, fontSize: 20, fontWeight: "600" },
+  planIconText: { color: p.forestLight, fontSize: 20, fontWeight: "600" },
   planMain: { flex: 1, gap: 7 },
   planHeading: { flexDirection: "row", alignItems: "center", gap: 9 },
   planTitle: { color: p.ink, fontSize: 14, fontWeight: "700" },
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  activityIconText: { color: p.forest, fontSize: 17, fontWeight: "700" },
+  activityIconText: { color: p.forestLight, fontSize: 17, fontWeight: "700" },
   activityMain: { flex: 1, gap: 3 },
   activityTitle: { color: p.ink, fontSize: 13, fontWeight: "700" },
   activityAmount: { color: p.ink, fontSize: 14, fontWeight: "700" },

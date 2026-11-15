@@ -84,7 +84,7 @@ export function ActionButton({
           (disabled || loading) && { color: p.muted },
         ]}
       >
-        {loading ? <View style={ui.loadingContent}><ActivityIndicator size="small" color={tone === "dark" ? p.paper : p.forest} /><Text style={[ui.actionText, tone === "light" && ui.actionTextLight, tone === "quiet" && ui.actionTextQuiet]}>Traitement…</Text></View> : label}
+        {loading ? <View style={ui.loadingContent}><ActivityIndicator size="small" color={tone === "dark" ? p.onForest : tone === "light" ? p.forest : p.forestLight} /><Text style={[ui.actionText, tone === "light" && ui.actionTextLight, tone === "quiet" && ui.actionTextQuiet]}>Traitement…</Text></View> : label}
       </Text>
     </Pressable>
   );
@@ -117,7 +117,7 @@ export function TextField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor="#9AA69E"
+          placeholderTextColor={p.placeholder}
           keyboardType={keyboardType ?? "default"}
           autoCapitalize={autoCapitalize ?? "sentences"}
           autoCorrect={false}
@@ -160,7 +160,7 @@ export const text = StyleSheet.create({
   body: { color: p.ink, fontSize: 15, lineHeight: 22 },
   caption: { color: p.muted, fontSize: 12, lineHeight: 18 },
   value: { color: p.ink, fontSize: 17, fontWeight: "700" },
-  green: { color: p.forest, fontWeight: "700" },
+  green: { color: p.forestLight, fontWeight: "700" },
 });
 
 const ui = StyleSheet.create({
@@ -210,11 +210,11 @@ const ui = StyleSheet.create({
   actionDark: { backgroundColor: p.forest },
   actionLight: { backgroundColor: p.mint },
   actionQuiet: { backgroundColor: p.softGreen },
-  actionDisabled: { backgroundColor: "#E8ECE7" },
+  actionDisabled: { backgroundColor: p.disabled },
   loadingContent: { flexDirection: "row", alignItems: "center", gap: 9 },
-  actionText: { color: p.paper, fontSize: 15, fontWeight: "700" },
+  actionText: { color: p.onForest, fontSize: 15, fontWeight: "700" },
   actionTextLight: { color: p.forest },
-  actionTextQuiet: { color: p.forest },
+  actionTextQuiet: { color: p.forestLight },
   fieldWrap: { gap: 7 },
   fieldLabel: { color: p.ink, fontSize: 13, fontWeight: "600" },
   inputShell: {
@@ -246,6 +246,6 @@ const ui = StyleSheet.create({
   },
   pillActive: { backgroundColor: p.forest, borderColor: p.forest },
   pillText: { color: p.muted, fontSize: 13, fontWeight: "600" },
-  pillTextActive: { color: p.paper },
+  pillTextActive: { color: p.onForest },
   divider: { height: 1, backgroundColor: p.line },
 });
