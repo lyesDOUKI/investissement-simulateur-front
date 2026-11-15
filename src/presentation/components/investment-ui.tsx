@@ -99,15 +99,17 @@ export function TextField({
   helper,
   suffix,
   autoCapitalize,
+  secureTextEntry,
 }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
-  keyboardType?: "default" | "decimal-pad" | "number-pad";
+  keyboardType?: "default" | "decimal-pad" | "number-pad" | "email-address" | "phone-pad";
   helper?: string;
   suffix?: string;
   autoCapitalize?: "none" | "characters" | "sentences";
+  secureTextEntry?: boolean;
 }) {
   return (
     <View style={ui.fieldWrap}>
@@ -121,6 +123,7 @@ export function TextField({
           keyboardType={keyboardType ?? "default"}
           autoCapitalize={autoCapitalize ?? "sentences"}
           autoCorrect={false}
+          secureTextEntry={secureTextEntry}
           style={ui.input}
         />
         {suffix ? <Text style={ui.suffix}>{suffix}</Text> : null}

@@ -6,6 +6,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import type { Operation, Portfolio, Security } from "@/domain/models/operation";
+import type { UserAccount } from "@/domain/models/user-account";
 import {
   ActionButton,
   Card,
@@ -23,6 +24,8 @@ const euro = (amount: number) =>
 export function DashboardScreen({
   portfolio,
   securities,
+  account,
+  onAccount,
   onAddVersement,
   onAddDca,
   onHistory,
@@ -30,6 +33,8 @@ export function DashboardScreen({
 }: {
   portfolio: Portfolio;
   securities: Security[];
+  account: UserAccount;
+  onAccount: () => void;
   onAddVersement: () => void;
   onAddDca: () => void;
   onHistory: () => void;
@@ -60,9 +65,10 @@ export function DashboardScreen({
         </Text>
         <View style={styles.brandRight}>
           <Text style={styles.marketStatus}>● Simulation</Text>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JD</Text>
-          </View>
+          <Pressable onPress={onAccount} accessibilityRole="button" accessibilityLabel={`Mon compte, ${account.firstName} ${account.lastName}`} style={styles.accountButton}>
+            <View style={styles.avatar}><Text style={styles.avatarText}>{account.firstName.charAt(0)}{account.lastName.charAt(0)}</Text></View>
+            <Text style={styles.accountLabel}>Mon compte</Text>
+          </Pressable>
         </View>
       </View>
 
@@ -296,6 +302,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 13,
   },
+  accountButton: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44 },
+  accountLabel: { color: p.forestLight, fontSize: 10, fontWeight: "700" },
   marketStatus: { color: p.forestLight, fontSize: 11, fontWeight: "600" },
   avatar: {
     width: 34,
