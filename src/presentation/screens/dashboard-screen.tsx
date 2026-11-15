@@ -97,13 +97,8 @@ export function DashboardScreen({
           </View>
 
           <View style={styles.actions}>
-            <ActionButton
-              label="＋  Versement réalisé"
-              onPress={onAddVersement}
-            />
-            <Pressable style={styles.historyButton} onPress={onAddDca}>
-              <Text style={styles.historyButtonText}>＋  Plan DCA</Text>
-            </Pressable>
+            <ActionButton label="＋ Versement réalisé" tone="light" onPress={onAddVersement} />
+            <ActionButton label="＋ Plan DCA" tone="light" onPress={onAddDca} />
           </View>
 
           <SectionTitle
@@ -173,7 +168,8 @@ export function DashboardScreen({
             }
           />
           {plans.length ? (
-            plans.map((plan) => (
+            <View style={styles.planList}>
+              {plans.map((plan) => (
               <Card key={plan.id} style={styles.planCard}>
                 <View style={styles.planIcon}>
                   <Text style={styles.planIconText}>↻</Text>
@@ -200,7 +196,8 @@ export function DashboardScreen({
                   </Text>
                 </View>
               </Card>
-            ))
+              ))}
+            </View>
           ) : (
             <Card>
               <Text style={text.label}>
@@ -393,16 +390,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3C5D51",
     marginHorizontal: 16,
   },
-  actions: { flexDirection: "row", gap: 10, marginTop: 14 },
-  historyButton: {
-    minHeight: 51,
-    borderRadius: 30,
-    paddingHorizontal: 17,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: p.softGreen,
-  },
-  historyButtonText: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
+  actions: { gap: 9, marginTop: 14 },
   sectionHint: { color: p.muted, fontSize: 12 },
   holdingRow: {
     flexDirection: "row",
@@ -427,6 +415,7 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   trackFill: { height: "100%", borderRadius: 4 },
+  planList: { gap: 12 },
   planCard: { flexDirection: "row", gap: 14 },
   planIcon: {
     width: 38,

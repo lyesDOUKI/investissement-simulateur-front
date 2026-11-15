@@ -20,8 +20,8 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, onVe
       <Text style={styles.addTitle}>Ajouter une opération</Text>
       <Text style={styles.addSubtitle}>Jean saisit ses opérations ici. Aucun ordre n’est transmis.</Text>
       <View style={styles.addActions}>
-        <ActionButton label="＋ Versement réalisé" onPress={onVersement} />
-        <ActionButton label="＋ Plan DCA" tone="quiet" onPress={onDca} />
+        <ActionButton label="＋ Versement réalisé" tone="light" onPress={onVersement} />
+        <ActionButton label="＋ Plan DCA" tone="light" onPress={onDca} />
       </View>
     </Card>
     <SectionTitle title="Votre historique" action={<Text style={styles.count}>{operations.length} opération{operations.length === 1 ? "" : "s"}</Text>} />
