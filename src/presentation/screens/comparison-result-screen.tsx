@@ -14,7 +14,7 @@ export function ComparisonResultScreen({ operation, scenario, result, onAdjust }
 }) {
   const wide = useWindowDimensions().width >= 760;
   return <>
-    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Même date cible pour A et B : " + formatDateLabel(result.original.valuationDate) + " · résultats retournés par le service."} />
+    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Même date pour A et B : " + formatDateLabel(result.original.valuationDate) + ". Voyez comment la date de départ, le montant et les supports changent le résultat."} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
       <ScenarioCard title="A · Plan de référence" details={operationDetails(operation)} valuation={result.original} isDca={operation.kind === "dca"} />
       <ScenarioCard title="B · Plan alternatif" details={scenarioDetails(operation, scenario)} valuation={result.alternative} isDca={operation.kind === "dca"} highlighted />
@@ -24,7 +24,7 @@ export function ComparisonResultScreen({ operation, scenario, result, onAdjust }
       <DifferenceRow label="Capital investi" value={result.difference.invested} />
       <DifferenceRow label="Valeur à cette date" value={result.difference.value} />
       <DifferenceRow label="Écart de gain" value={result.difference.gain} />
-      <Text style={styles.hint}>Ces écarts proviennent de la réponse du service métier.</Text>
+      <Text style={styles.hint}>L’écart montre ce qui change entre les deux choix à la même date. Il ne prédit pas les performances futures.</Text>
     </Card>
     <Text style={styles.disclaimer}>Réponse fixe de l’adaptateur de démonstration en V0. Le scénario n’a pas été ajouté à votre historique et aucun ordre n’est transmis.</Text>
     <View style={styles.footer}>
@@ -45,16 +45,31 @@ function ScenarioCard({ title, details, valuation, isDca, highlighted = false }:
     {details.map((detail) => <Text key={detail} style={styles.meta}>{detail}</Text>)}
     <View style={styles.rule} />
     <Text style={styles.value}>{euro(valuation.value)}</Text>
-    <Text style={styles.meta}>Valeur retournée</Text>
+    <Text style={styles.meta}>Valeur au {formatDateLabel(valuation.valuationDate)}</Text>
     <View style={styles.rule} />
     <DifferenceRow label="Capital investi" value={valuation.invested} />
     <DifferenceRow label="Gain / perte" value={valuation.gain} />
     {valuation.assumptionPct !== undefined ? <DifferenceRow label="Hypothèse annuelle" suffix=" %" value={valuation.assumptionPct} /> : null}
     {isDca ? <Text style={styles.meta}>{valuation.installmentCount} échéance{valuation.installmentCount === 1 ? "" : "s"} reçue{valuation.installmentCount === 1 ? "" : "s"}</Text> : null}
     {valuation.allocations.map((allocation) => <View key={allocation.isin} style={styles.allocation}>
-      <Text style={styles.meta}>{allocation.name}</Text>
-      <Text style={styles.meta}>{euro(allocation.value)}</Text>
+      <View style={styles.allocationDetails}>
+        <Text style={styles.meta}>{allocation.name}</Text>
+        {allocation.instrumentKind === "uc" ? <Text style={styles.meta}>{allocation.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 })} parts acquises · cours {allocation.observedPrice === undefined ? "indisponible" : euro(allocation.observedPrice) + (allocation.observedDate ? " au " + formatDateLabel(allocation.observedDate) : "")}</Text> : <Text style={styles.meta}>Fonds euro · valeur estimée</Text>}
+      </View>
+      <View style={styles.allocationValue}>
+        <Text style={styles.allocationAmount}>{euro(allocation.value)}</Text>
+        <Text style={styles.meta}>à cette date</Text>
+      </View>
     </View>)}
+    {isDca && valuation.installments.length > 0 ? <View style={styles.installments}>
+      <Text style={styles.installmentHeading}>Parts acquises à chaque échéance</Text>
+      {valuation.installments.map((installment, index) => <View key={installment.executionDate + index} style={styles.installment}>
+        <Text style={styles.meta}>Échéance du {formatDateLabel(installment.dueDate)} · achat le {formatDateLabel(installment.executionDate)} · {euro(installment.amount)}</Text>
+        {installment.allocations.map((line, lineIndex) => <Text key={line.isin + lineIndex} style={styles.meta}>
+          {line.name} : {line.purchasePrice === undefined ? line.status : line.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " parts achetées à " + euro(line.purchasePrice) + (line.purchasePriceDate ? " le " + formatDateLabel(line.purchasePriceDate) : "")}
+        </Text>)}
+      </View>)}
+    </View> : null}
   </Card>;
 }
 
@@ -100,7 +115,13 @@ const styles = StyleSheet.create({
   rule: { height: 1, backgroundColor: p.line, marginVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   rowValue: { color: p.ink, fontSize: 13, fontWeight: "700" },
-  allocation: { flexDirection: "row", justifyContent: "space-between", gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
+  allocation: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
+  allocationDetails: { flex: 1, gap: 2 },
+  allocationValue: { alignItems: "flex-end", gap: 2 },
+  allocationAmount: { color: p.ink, fontSize: 12, fontWeight: "700" },
+  installments: { gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 },
+  installmentHeading: { color: p.ink, fontSize: 12, fontWeight: "700" },
+  installment: { gap: 3, paddingLeft: 8, borderLeftWidth: 2, borderColor: p.forestLight },
   difference: { backgroundColor: p.softGreen, gap: 13 },
   hint: { color: p.forestLight, fontSize: 11, lineHeight: 16, marginTop: 2 },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 14 },

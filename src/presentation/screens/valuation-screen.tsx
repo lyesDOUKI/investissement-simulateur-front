@@ -21,7 +21,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
   onCompare: () => void;
 }) {
   return <>
-    <PageHeading eyebrow="Résultat de valorisation" title="Valeur à une autre date" subtitle="La réponse du service métier pour votre opération." />
+    <PageHeading eyebrow="Résultat de valorisation" title={operation.kind === "dca" ? "Valeur de votre plan" : "Valeur de votre versement"} subtitle="Retrouvez vos achats, puis leur valeur à la date choisie." />
     <Card style={styles.source}>
       <Text style={styles.sourceTitle}>{operation.label}</Text>
       <Text style={styles.meta}>{operation.kind === "dca" ? "Plan mis en place le " : "Versement réalisé le "}{formatDateLabel(operation.date)} · {operation.kind === "dca" ? euro(operation.amount) + " / mois" : euro(operation.amount)}</Text>
@@ -30,7 +30,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
 
     {result ? <>
       <Card style={styles.hero}>
-        <Text style={styles.heroLabel}>Valeur retournée au {formatDateLabel(result.valuationDate)}</Text>
+        <Text style={styles.heroLabel}>Valeur de vos placements au {formatDateLabel(result.valuationDate)}</Text>
         <Text style={styles.heroValue}>{euro(result.value)}</Text>
         <Text style={styles.heroLabel}>Gain ou perte indicatif</Text>
         <Text style={styles.heroGain}>{result.gain >= 0 ? "+" : ""}{euro(result.gain)} · {result.gainRatePct.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %</Text>
@@ -39,34 +39,35 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
         {operation.kind === "dca" ? <Text style={styles.heroLabel}>{result.installmentCount} échéances retournées</Text> : null}
         {result.assumptionPct !== undefined ? <Text style={styles.heroLabel}>Hypothèse transmise : {result.assumptionPct} % / an</Text> : null}
       </Card>
-      <Text style={styles.resultExplanation}>Cet écart compare la valeur retournée au capital investi. Il est fourni par le service et ne préjuge pas des performances futures.</Text>
+      <Text style={styles.resultExplanation}>Les achats ci-dessous sont ceux enregistrés à leurs dates d’exécution. La valeur présentée correspond à la date que vous avez choisie.</Text>
       {result.hasMissingPrices ? <Card style={styles.warning}><Text style={styles.warningText}>Le service signale un ou plusieurs cours manquants. Consultez son résultat détaillé.</Text></Card> : null}
 
-      <SectionTitle title={operation.kind === "dca" ? "Achats par support" : "Ce que votre versement a acheté"} />
+      <SectionTitle title={operation.kind === "dca" ? "Vos achats, support par support" : "Votre achat"} />
       {result.allocations.some((allocation) => allocation.instrumentKind === "uc") ? <Card style={styles.education}>
         <Text style={styles.educationTitle}>Comprendre les parts</Text>
-        <Text style={styles.educationText}>Une part est une unité détenue sur un support. Le nombre et le prix affichés sont fournis par le service. Pour un DCA, chaque échéance peut acheter une quantité différente selon le cours du jour.</Text>
+        <Text style={styles.educationText}>Une part est une fraction de votre placement sur un support. Le nombre acheté à chaque date reste dans votre historique ; la valeur de ces parts évolue avec le cours. Avec un plan régulier, chaque échéance peut acheter un nombre différent de parts.</Text>
       </Card> : null}
       {result.allocations.map((allocation) => <Card key={allocation.instrumentKind + allocation.isin} style={styles.detailCard}>
         <View style={styles.row}><Text style={styles.detailTitle}>{allocation.name}</Text><Text style={styles.detailValue}>{euro(allocation.value)}</Text></View>
         <Text style={styles.meta}>{allocation.instrumentKind === "uc" ? allocation.isin : "Fonds euro"}</Text>
-        <View style={styles.row}><Text style={styles.meta}>Montant investi</Text><Text style={styles.detailValue}>{euro(allocation.invested)}</Text></View>
-        {allocation.instrumentKind === "uc" ? <View style={styles.row}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.detailValue}>{units(allocation.shares)}</Text></View> : <Text style={styles.meta}>Valorisation du fonds euro estimée par le service</Text>}
-        {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <View style={styles.row}><Text style={styles.meta}>Prix moyen d’achat</Text><Text style={styles.detailValue}>{euro(allocation.averagePurchasePrice)}</Text></View> : null}
-        {allocation.instrumentKind === "uc" && allocation.observedDate ? <View style={styles.row}><Text style={styles.meta}>Dernier cours connu · {formatDateLabel(allocation.observedDate)}</Text><Text style={styles.detailValue}>{allocation.observedPrice === undefined ? "Indisponible" : euro(allocation.observedPrice)}</Text></View> : null}
-        <View style={styles.row}><Text style={styles.meta}>Gain ou perte sur ce support</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
+        <View style={styles.row}><Text style={styles.meta}>Montant placé</Text><Text style={styles.detailValue}>{euro(allocation.invested)}</Text></View>
+        {allocation.instrumentKind === "uc" ? <View style={styles.row}><Text style={styles.meta}>{operation.kind === "dca" ? "Parts acquises au total" : "Parts acquises le " + formatDateLabel(operation.date)}</Text><Text style={styles.detailValue}>{units(allocation.shares)}</Text></View> : <Text style={styles.meta}>Valeur du fonds euro estimée par le service</Text>}
+        {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <View style={styles.row}><Text style={styles.meta}>{operation.kind === "dca" ? "Prix moyen des achats" : "Cours moyen à l’achat"}</Text><Text style={styles.detailValue}>{euro(allocation.averagePurchasePrice)}</Text></View> : null}
+        {allocation.instrumentKind === "uc" && allocation.observedDate ? <View style={styles.row}><Text style={styles.meta}>Cours pris en compte · {formatDateLabel(allocation.observedDate)}</Text><Text style={styles.detailValue}>{allocation.observedPrice === undefined ? "Indisponible" : euro(allocation.observedPrice)}</Text></View> : null}
+        <View style={styles.row}><Text style={styles.meta}>Valeur au {formatDateLabel(result.valuationDate)}</Text><Text style={styles.detailValue}>{euro(allocation.value)}</Text></View>
+        <View style={styles.row}><Text style={styles.meta}>Évolution depuis vos achats</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
       </Card>)}
 
       {result.installments.length > 0 ? <>
         <SectionTitle title="Échéances" />
         <Card style={styles.installments}>
           {result.installments.map((installment, index) => <View key={installment.executionDate + index} style={styles.installment}>
-            <View style={styles.row}><Text style={styles.detailTitle}>{formatDateLabel(installment.dueDate)}</Text><Text style={styles.detailValue}>{euro(installment.amount)}</Text></View>
-            <Text style={styles.meta}>Exécutée le {formatDateLabel(installment.executionDate)}</Text>
+            <View style={styles.row}><Text style={styles.detailTitle}>Échéance du {formatDateLabel(installment.dueDate)}</Text><Text style={styles.detailValue}>{euro(installment.amount)}</Text></View>
+            <Text style={styles.meta}>Achat réalisé le {formatDateLabel(installment.executionDate)}</Text>
             {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentAllocation}>
               <Text style={styles.detailTitle}>{line.name}</Text>
-              <Text style={styles.meta}>{line.isin} · {euro(line.amount)} affectés</Text>
-              <Text style={styles.meta}>{line.purchasePrice === undefined ? line.status : units(line.shares) + " parts achetées à " + euro(line.purchasePrice) + (line.purchasePriceDate ? " · cours du " + formatDateLabel(line.purchasePriceDate) : "")}</Text>
+              <Text style={styles.meta}>{line.isin} · {euro(line.amount)} placés sur ce support</Text>
+              <Text style={styles.meta}>{line.purchasePrice === undefined ? line.status : units(line.shares) + " parts acquises au cours de " + euro(line.purchasePrice) + (line.purchasePriceDate ? " le " + formatDateLabel(line.purchasePriceDate) : "")}</Text>
             </View>)}
             {index < result.installments.length - 1 ? <Divider /> : null}
           </View>)}
