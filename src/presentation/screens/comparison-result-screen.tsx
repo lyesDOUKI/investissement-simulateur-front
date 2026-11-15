@@ -14,7 +14,7 @@ export function ComparisonResultScreen({ operation, scenario, result, onAdjust }
 }) {
   const wide = useWindowDimensions().width >= 760;
   return <>
-    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Valorisation au " + formatDateLabel(result.original.valuationDate) + " · résultats retournés par le service."} />
+    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Même date cible pour A et B : " + formatDateLabel(result.original.valuationDate) + " · résultats retournés par le service."} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
       <ScenarioCard title="A · Plan de référence" details={operationDetails(operation)} valuation={result.original} />
       <ScenarioCard title="B · Plan alternatif" details={scenarioDetails(operation, scenario)} valuation={result.alternative} highlighted />
@@ -60,11 +60,11 @@ function ScenarioCard({ title, details, valuation, highlighted = false }: {
 function operationDetails(operation: Operation): string[] {
   const schedule = operation.kind === "dca"
     ? [
-        "Démarré le " + formatDateLabel(operation.date),
+        "Mis en place le " + formatDateLabel(operation.date),
         operation.amount.toLocaleString("fr-FR") + " € / mois · prélèvement le " + operation.executionDay,
         "Délai : " + operation.delayBusinessDays + " jours ouvrés",
       ]
-    : ["Versement du " + formatDateLabel(operation.date), operation.amount.toLocaleString("fr-FR") + " €"];
+    : ["Versement exécuté le " + formatDateLabel(operation.date), operation.amount.toLocaleString("fr-FR") + " €"];
   if (operation.annualReturnPct !== undefined) schedule.push("Hypothèse annuelle : " + operation.annualReturnPct + " %");
   return schedule.concat(operation.allocations.map((line) => (line.name ?? line.isin) + " · " + euro(line.amount)));
 }
@@ -72,11 +72,11 @@ function operationDetails(operation: Operation): string[] {
 function scenarioDetails(operation: Operation, scenario: ScenarioInput): string[] {
   const schedule = operation.kind === "dca"
     ? [
-        "Démarré le " + formatDateLabel(scenario.startDate),
+        "Mis en place le " + formatDateLabel(scenario.startDate),
         scenario.amount.toLocaleString("fr-FR") + " € / mois · prélèvement le " + scenario.executionDay,
         "Délai : " + scenario.delayBusinessDays + " jours ouvrés",
       ]
-    : ["Versement hypothétique du " + formatDateLabel(scenario.startDate), scenario.amount.toLocaleString("fr-FR") + " €"];
+    : ["Versement B prévu le " + formatDateLabel(scenario.startDate), scenario.amount.toLocaleString("fr-FR") + " €"];
   if (scenario.annualReturnPct !== undefined) schedule.push("Hypothèse annuelle : " + scenario.annualReturnPct + " %");
   return schedule.concat(scenario.allocations.map((line) => (line.name ?? line.isin) + " · " + euro(line.amount)));
 }

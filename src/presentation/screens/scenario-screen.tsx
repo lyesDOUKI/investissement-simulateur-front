@@ -36,7 +36,13 @@ export function ScenarioFormScreen(props: {
   const update = (line: AllocationLine, field: AllocationField, value: string) => props.onLineChange(line.id, field, value);
 
   return <>
-    <PageHeading eyebrow="Comparaison · paramètres" title="Construire l’autre scénario" subtitle="Gardez votre opération comme référence. Changez les paramètres du scénario alternatif puis comparez les deux au même horizon." />
+    <PageHeading eyebrow="Comparaison · paramètres" title="Construire l’autre scénario" subtitle="Choisissez une date cible commune, puis modifiez les paramètres du scénario B. Votre opération reste le scénario A de référence." />
+
+    <Card style={styles.targetDate}>
+      <Text style={styles.referenceEyebrow}>1 · DATE COMMUNE DE VALORISATION</Text>
+      <Text style={styles.helper}>A et B seront valorisés à cette même date pour rendre leurs résultats comparables.</Text>
+      <TextField label="Date cible" value={date} onChangeText={props.onDateChange} placeholder="JJ/MM/AAAA" />
+    </Card>
 
     <Card style={styles.reference}>
       <Text style={styles.referenceEyebrow}>VOTRE OPÉRATION DE RÉFÉRENCE</Text>
@@ -51,7 +57,7 @@ export function ScenarioFormScreen(props: {
       <View style={styles.alternativeHeading}>
         <View style={styles.step}><Text style={styles.stepText}>B</Text></View>
         <View style={{ flex: 1, gap: 3 }}>
-          <Text style={styles.sectionTitle}>Scénario alternatif</Text>
+          <Text style={styles.sectionTitle}>2 · Scénario alternatif</Text>
           <Text style={styles.helper}>Cette hypothèse ne sera pas ajoutée au journal.</Text>
         </View>
       </View>
@@ -61,8 +67,7 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{savedPlans.map((plan) => <Pill key={plan.id} label={formatDateLabel(plan.date) + " · " + plan.amount.toLocaleString("fr-FR") + " € / mois"} onPress={() => props.onUseSavedPlan(plan)} />)}</View>
       </View> : null}
 
-      <TextField label={operation.kind === "dca" ? "Date de démarrage du plan" : "Date du versement hypothétique"} value={startDate} onChangeText={props.onStartDateChange} placeholder="JJ/MM/AAAA" />
-      <TextField label="Date à laquelle comparer les résultats" value={date} onChangeText={props.onDateChange} placeholder="JJ/MM/AAAA" helper="Le même horizon est envoyé pour les deux scénarios." />
+      <TextField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChangeText={props.onStartDateChange} placeholder="JJ/MM/AAAA" />
       <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} />
       {operation.kind === "dca" ? <>
         <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
@@ -71,7 +76,7 @@ export function ScenarioFormScreen(props: {
       <TextField label="Taux annuel (hypothèse)" value={props.annualReturnPct} onChangeText={props.onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Transmis au service pour une projection future." />
     </Card>
 
-    <SectionTitle title="Allocation du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
+    <SectionTitle title="3 · Allocation du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
     {lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHeader}>
         <Text style={styles.lineTitle}>Support {index + 1}</Text>
@@ -100,6 +105,7 @@ export function ScenarioFormScreen(props: {
 const totalLabel = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
 const styles = StyleSheet.create({
+  targetDate: { backgroundColor: p.softGreen, gap: 10, marginBottom: 14 },
   reference: { backgroundColor: "#F4F6F1", gap: 6, marginBottom: 14 },
   referenceEyebrow: { color: p.forestLight, fontSize: 9, fontWeight: "800", letterSpacing: 1 },
   referenceTitle: { color: p.ink, fontSize: 15, fontWeight: "700" },
