@@ -52,13 +52,15 @@ function ScenarioCard({ title, details, valuation, isDca, highlighted = false }:
     {valuation.assumptionPct !== undefined ? <DifferenceRow label="Hypothèse annuelle" suffix=" %" value={valuation.assumptionPct} /> : null}
     {isDca ? <Text style={styles.meta}>{valuation.installmentCount} échéance{valuation.installmentCount === 1 ? "" : "s"} reçue{valuation.installmentCount === 1 ? "" : "s"}</Text> : null}
     {valuation.allocations.map((allocation) => <View key={allocation.isin} style={styles.allocation}>
-      <View style={styles.allocationDetails}>
-        <Text style={styles.meta}>{allocation.name}</Text>
-        {allocation.instrumentKind === "uc" ? <Text style={styles.meta}>{allocation.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 })} parts acquises · cours {allocation.observedPrice === undefined ? "indisponible" : euro(allocation.observedPrice) + (allocation.observedDate ? " au " + formatDateLabel(allocation.observedDate) : "")}</Text> : <Text style={styles.meta}>Fonds euro · valeur estimée</Text>}
-      </View>
-      <View style={styles.allocationValue}>
-        <Text style={styles.allocationAmount}>{euro(allocation.value)}</Text>
-        <Text style={styles.meta}>à cette date</Text>
+      <Text style={styles.allocationTitle}>{allocation.name}</Text>
+      <Text style={styles.meta}>{allocation.instrumentKind === "uc" ? allocation.isin : "Fonds euro"}</Text>
+      <View style={styles.allocationRows}>
+        <View style={styles.allocationRow}><Text style={styles.meta}>Montant placé sur ce support</Text><Text style={styles.allocationRowValue}>{euro(allocation.invested)}</Text></View>
+        {allocation.instrumentKind === "uc" ? <>
+          <View style={styles.allocationRow}><Text style={styles.meta}>Parts acquises au total sur ce support</Text><Text style={styles.allocationRowValue}>{allocation.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 })}</Text></View>
+          <View style={styles.allocationRow}><Text style={styles.meta}>Cours pris en compte{allocation.observedDate ? " · " + formatDateLabel(allocation.observedDate) : ""}</Text><Text style={styles.allocationRowValue}>{allocation.observedPrice === undefined ? "Indisponible" : euro(allocation.observedPrice)}</Text></View>
+        </> : <Text style={styles.meta}>Valeur du fonds euro estimée</Text>}
+        <View style={styles.allocationRow}><Text style={styles.meta}>Valeur au {formatDateLabel(valuation.valuationDate)}</Text><Text style={styles.allocationRowValue}>{euro(allocation.value)}</Text></View>
       </View>
     </View>)}
     {isDca && valuation.installments.length > 0 ? <View style={styles.installments}>
@@ -119,10 +121,11 @@ const styles = StyleSheet.create({
   rule: { height: 1, backgroundColor: p.line, marginVertical: 4 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   rowValue: { color: p.ink, fontSize: 13, fontWeight: "700" },
-  allocation: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
-  allocationDetails: { flex: 1, gap: 2 },
-  allocationValue: { alignItems: "flex-end", gap: 2 },
-  allocationAmount: { color: p.ink, fontSize: 12, fontWeight: "700" },
+  allocation: { gap: 4, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
+  allocationTitle: { color: p.ink, fontSize: 13, fontWeight: "700" },
+  allocationRows: { gap: 5, marginTop: 3 },
+  allocationRow: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  allocationRowValue: { color: p.ink, fontSize: 11, fontWeight: "700" },
   installments: { gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 },
   installmentHeading: { color: p.ink, fontSize: 12, fontWeight: "700" },
   installment: { gap: 5, paddingLeft: 8, borderLeftWidth: 2, borderColor: p.forestLight },
