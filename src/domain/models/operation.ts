@@ -113,15 +113,19 @@ export interface ValueOperationInput {
 }
 
 export interface ScenarioInput {
+  startDate: string;
   amount: number;
   allocations: AllocationLine[];
   valuationDate: string;
+  executionDay?: number;
+  delayBusinessDays?: number;
   annualReturnPct?: number;
 }
 
 export interface InvestmentComparison {
   original: InvestmentValuation;
   alternative: InvestmentValuation;
+  /** Difference returned by the backend: scenario B relative to reference A. */
   difference: {
     invested: number;
     value: number;

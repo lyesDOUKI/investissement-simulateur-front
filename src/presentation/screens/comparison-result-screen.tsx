@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import type { InvestmentComparison } from "@/domain/models/operation";
+import type { InvestmentComparison, Operation, ScenarioInput } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, SectionTitle } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-export function ComparisonResultScreen({ result, onAdjust }: {
+export function ComparisonResultScreen({ operation, scenario, result, onAdjust }: {
+  operation: Operation;
+  scenario: ScenarioInput;
   result: InvestmentComparison;
   onAdjust: () => void;
 }) {
@@ -14,10 +16,10 @@ export function ComparisonResultScreen({ result, onAdjust }: {
   return <>
     <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={"Valorisation au " + formatDateLabel(result.original.valuationDate) + " · résultats retournés par le service."} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
-      <ScenarioCard title="Votre opération" valuation={result.original} />
-      <ScenarioCard title="Autre hypothèse" valuation={result.alternative} highlighted />
+      <ScenarioCard title="A · Plan de référence" details={operationDetails(operation)} valuation={result.original} />
+      <ScenarioCard title="B · Plan alternatif" details={scenarioDetails(operation, scenario)} valuation={result.alternative} highlighted />
     </View>
-    <SectionTitle title="Écart entre les scénarios" />
+    <SectionTitle title="Écart · B par rapport à A" />
     <Card style={styles.difference}>
       <DifferenceRow label="Capital investi" value={result.difference.invested} />
       <DifferenceRow label="Valeur à cette date" value={result.difference.value} />
@@ -31,13 +33,16 @@ export function ComparisonResultScreen({ result, onAdjust }: {
   </>;
 }
 
-function ScenarioCard({ title, valuation, highlighted = false }: {
+function ScenarioCard({ title, details, valuation, highlighted = false }: {
   title: string;
+  details: string[];
   valuation: InvestmentComparison["original"];
   highlighted?: boolean;
 }) {
   return <Card style={[styles.scenario, highlighted && styles.scenarioHighlighted]}>
     <Text style={styles.scenarioTitle}>{title}</Text>
+    {details.map((detail) => <Text key={detail} style={styles.meta}>{detail}</Text>)}
+    <View style={styles.rule} />
     <Text style={styles.value}>{euro(valuation.value)}</Text>
     <Text style={styles.meta}>Valeur retournée</Text>
     <View style={styles.rule} />
@@ -50,6 +55,30 @@ function ScenarioCard({ title, valuation, highlighted = false }: {
       <Text style={styles.meta}>{euro(allocation.value)}</Text>
     </View>)}
   </Card>;
+}
+
+function operationDetails(operation: Operation): string[] {
+  const schedule = operation.kind === "dca"
+    ? [
+        "Démarré le " + formatDateLabel(operation.date),
+        operation.amount.toLocaleString("fr-FR") + " € / mois · prélèvement le " + operation.executionDay,
+        "Délai : " + operation.delayBusinessDays + " jours ouvrés",
+      ]
+    : ["Versement du " + formatDateLabel(operation.date), operation.amount.toLocaleString("fr-FR") + " €"];
+  if (operation.annualReturnPct !== undefined) schedule.push("Hypothèse annuelle : " + operation.annualReturnPct + " %");
+  return schedule.concat(operation.allocations.map((line) => (line.name ?? line.isin) + " · " + euro(line.amount)));
+}
+
+function scenarioDetails(operation: Operation, scenario: ScenarioInput): string[] {
+  const schedule = operation.kind === "dca"
+    ? [
+        "Démarré le " + formatDateLabel(scenario.startDate),
+        scenario.amount.toLocaleString("fr-FR") + " € / mois · prélèvement le " + scenario.executionDay,
+        "Délai : " + scenario.delayBusinessDays + " jours ouvrés",
+      ]
+    : ["Versement hypothétique du " + formatDateLabel(scenario.startDate), scenario.amount.toLocaleString("fr-FR") + " €"];
+  if (scenario.annualReturnPct !== undefined) schedule.push("Hypothèse annuelle : " + scenario.annualReturnPct + " %");
+  return schedule.concat(scenario.allocations.map((line) => (line.name ?? line.isin) + " · " + euro(line.amount)));
 }
 
 function DifferenceRow({ label, value, suffix = " €" }: { label: string; value: number; suffix?: string }) {

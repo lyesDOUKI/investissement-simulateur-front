@@ -82,7 +82,7 @@ export function DashboardScreen({
             <Text style={styles.heroValue}>{euro(portfolio.value)}</Text>
             <View style={styles.heroGainRow}>
               <Text style={styles.heroGain}>
-                ↗ {euro(portfolio.gain)} (
+                {portfolio.gain >= 0 ? "↗ " : "↘ "}{euro(portfolio.gain)} (
                 {gainRate.toFixed(2).replace(".", ",")} %)
               </Text>
               <Text style={styles.heroFootnote}>depuis le début</Text>
