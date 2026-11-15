@@ -59,19 +59,20 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
       </Card>)}
 
       {result.installments.length > 0 ? <>
-        <SectionTitle title="Échéances" />
-        <Card style={styles.installments}>
-          {result.installments.map((installment, index) => <View key={installment.executionDate + index} style={styles.installment}>
-            <View style={styles.row}><Text style={styles.detailTitle}>Échéance du {formatDateLabel(installment.dueDate)}</Text><Text style={styles.detailValue}>{euro(installment.amount)}</Text></View>
-            <Text style={styles.meta}>Achat réalisé le {formatDateLabel(installment.executionDate)}</Text>
-            {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentAllocation}>
-              <Text style={styles.detailTitle}>{line.name}</Text>
-              <Text style={styles.meta}>{line.isin} · {euro(line.amount)} placés sur ce support</Text>
-              <Text style={styles.meta}>{line.purchasePrice === undefined ? line.status : units(line.shares) + " parts acquises au cours de " + euro(line.purchasePrice) + (line.purchasePriceDate ? " le " + formatDateLabel(line.purchasePriceDate) : "")}</Text>
-            </View>)}
-            {index < result.installments.length - 1 ? <Divider /> : null}
+        <SectionTitle title="Détail des échéances" />
+        {result.installments.map((installment, index) => <Card key={installment.executionDate + index} style={styles.installments}>
+          <View style={styles.installmentHeader}>
+            <Text style={styles.detailTitle}>Achat exécuté le {formatDateLabel(installment.executionDate)}</Text>
+            <Text style={styles.meta}>Échéance prévue le {formatDateLabel(installment.dueDate)} · {euro(installment.amount)} au total</Text>
+          </View>
+          {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentAllocation}>
+            <Text style={styles.detailTitle}>{line.name}</Text>
+            <Text style={styles.meta}>{line.isin}</Text>
+            <View style={styles.row}><Text style={styles.meta}>Montant placé</Text><Text style={styles.detailValue}>{euro(line.amount)}</Text></View>
+            <View style={styles.row}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.detailValue}>{units(line.shares)}</Text></View>
+            <View style={styles.row}><Text style={styles.meta}>Prix à l’achat{line.purchasePriceDate ? " · " + formatDateLabel(line.purchasePriceDate) : ""}</Text><Text style={styles.detailValue}>{line.purchasePrice === undefined ? "Indisponible" : euro(line.purchasePrice)}</Text></View>
           </View>)}
-        </Card>
+        </Card>)}
       </> : null}
     </> : null}
 
@@ -106,9 +107,9 @@ const styles = StyleSheet.create({
   detailValue: { color: p.ink, fontSize: 14, fontWeight: "700" },
   positive: { color: p.forestLight, fontSize: 12, fontWeight: "700" },
   negative: { color: p.red, fontSize: 12, fontWeight: "700" },
-  installments: { gap: 12 },
-  installment: { gap: 7, paddingVertical: 5 },
-  installmentAllocation: { gap: 4, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
+  installments: { gap: 10, marginBottom: 9 },
+  installmentHeader: { gap: 4 },
+  installmentAllocation: { gap: 7, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 },
   parameters: { gap: 15 },
   error: { color: p.red, fontSize: 13, lineHeight: 18 },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 13, marginBottom: 8 },

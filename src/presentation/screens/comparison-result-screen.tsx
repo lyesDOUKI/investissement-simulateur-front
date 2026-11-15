@@ -64,10 +64,14 @@ function ScenarioCard({ title, details, valuation, isDca, highlighted = false }:
     {isDca && valuation.installments.length > 0 ? <View style={styles.installments}>
       <Text style={styles.installmentHeading}>Parts acquises à chaque échéance</Text>
       {valuation.installments.map((installment, index) => <View key={installment.executionDate + index} style={styles.installment}>
-        <Text style={styles.meta}>Échéance du {formatDateLabel(installment.dueDate)} · achat le {formatDateLabel(installment.executionDate)} · {euro(installment.amount)}</Text>
-        {installment.allocations.map((line, lineIndex) => <Text key={line.isin + lineIndex} style={styles.meta}>
-          {line.name} : {line.purchasePrice === undefined ? line.status : line.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 }) + " parts achetées à " + euro(line.purchasePrice) + (line.purchasePriceDate ? " le " + formatDateLabel(line.purchasePriceDate) : "")}
-        </Text>)}
+        <Text style={styles.installmentDate}>Achat exécuté le {formatDateLabel(installment.executionDate)}</Text>
+        <Text style={styles.meta}>Échéance prévue le {formatDateLabel(installment.dueDate)} · {euro(installment.amount)} au total</Text>
+        {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentSupport}>
+          <Text style={styles.meta}>{line.name} · {line.isin}</Text>
+          <View style={styles.installmentRow}><Text style={styles.meta}>Montant placé</Text><Text style={styles.installmentValue}>{euro(line.amount)}</Text></View>
+          <View style={styles.installmentRow}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.installmentValue}>{line.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 })}</Text></View>
+          <View style={styles.installmentRow}><Text style={styles.meta}>Prix à l’achat{line.purchasePriceDate ? " · " + formatDateLabel(line.purchasePriceDate) : ""}</Text><Text style={styles.installmentValue}>{line.purchasePrice === undefined ? "Indisponible" : euro(line.purchasePrice)}</Text></View>
+        </View>)}
       </View>)}
     </View> : null}
   </Card>;
@@ -121,7 +125,11 @@ const styles = StyleSheet.create({
   allocationAmount: { color: p.ink, fontSize: 12, fontWeight: "700" },
   installments: { gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 },
   installmentHeading: { color: p.ink, fontSize: 12, fontWeight: "700" },
-  installment: { gap: 3, paddingLeft: 8, borderLeftWidth: 2, borderColor: p.forestLight },
+  installment: { gap: 5, paddingLeft: 8, borderLeftWidth: 2, borderColor: p.forestLight },
+  installmentDate: { color: p.ink, fontSize: 12, fontWeight: "700" },
+  installmentSupport: { gap: 5, marginTop: 3, paddingTop: 7, borderTopWidth: 1, borderColor: p.line },
+  installmentRow: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  installmentValue: { color: p.ink, fontSize: 11, fontWeight: "700" },
   difference: { backgroundColor: p.softGreen, gap: 13 },
   hint: { color: p.forestLight, fontSize: 11, lineHeight: 16, marginTop: 2 },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 14 },
