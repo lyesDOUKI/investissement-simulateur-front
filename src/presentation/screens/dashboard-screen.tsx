@@ -23,13 +23,15 @@ const euro = (amount: number) =>
 export function DashboardScreen({
   portfolio,
   securities,
-  onInvest,
+  onAddVersement,
+  onAddDca,
   onHistory,
   onValue,
 }: {
   portfolio: Portfolio;
   securities: Security[];
-  onInvest: () => void;
+  onAddVersement: () => void;
+  onAddDca: () => void;
   onHistory: () => void;
   onValue: (operation: Operation) => void;
 }) {
@@ -96,11 +98,11 @@ export function DashboardScreen({
 
           <View style={styles.actions}>
             <ActionButton
-              label="＋  Nouvel investissement"
-              onPress={onInvest}
+              label="＋  Versement réalisé"
+              onPress={onAddVersement}
             />
-            <Pressable style={styles.historyButton} onPress={onHistory}>
-              <Text style={styles.historyButtonText}>Activité ↗</Text>
+            <Pressable style={styles.historyButton} onPress={onAddDca}>
+              <Text style={styles.historyButtonText}>＋  Plan DCA</Text>
             </Pressable>
           </View>
 
@@ -204,7 +206,7 @@ export function DashboardScreen({
               <Text style={text.label}>
                 Aucun plan DCA enregistré pour le moment.
               </Text>
-              <Pressable onPress={onInvest}>
+              <Pressable onPress={onAddDca}>
                 <Text style={styles.link}>Enregistrer mon premier plan →</Text>
               </Pressable>
             </Card>
