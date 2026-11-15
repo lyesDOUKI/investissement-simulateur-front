@@ -48,7 +48,7 @@ export function ScenarioFormScreen(props: {
     <Card style={styles.reference}>
       <Text style={styles.referenceEyebrow}>VOTRE OPÉRATION DE RÉFÉRENCE</Text>
       <Text style={styles.referenceTitle}>{operation.label}</Text>
-      <Text style={styles.referenceMeta}>{operation.kind === "dca" ? "Plan DCA · " + totalLabel(operation.amount) + " / mois" : "Versement · " + totalLabel(operation.amount)}</Text>
+      <Text style={styles.referenceMeta}>{operation.kind === "dca" ? "Versements réguliers · " + totalLabel(operation.amount) + " / mois" : "Versement · " + totalLabel(operation.amount)}</Text>
       <Text style={styles.referenceMeta}>Début : {formatDateLabel(operation.date)}</Text>
       {operation.kind === "dca" ? <Text style={styles.referenceMeta}>Prélèvement le {operation.executionDay} · délai {operation.delayBusinessDays} jours ouvrés</Text> : null}
       <View style={styles.referenceLines}>{operation.allocations.map((line) => <Text key={line.id} style={styles.referenceMeta}>• {line.name ?? line.isin} · {totalLabel(line.amount)}</Text>)}</View>
@@ -87,8 +87,9 @@ export function ScenarioFormScreen(props: {
         <Pill label="UC · ISIN" active={line.instrumentKind === "uc"} onPress={() => update(line, "instrumentKind", "uc")} />
         <Pill label="Fonds euro" active={line.instrumentKind === "fonds-euro"} onPress={() => update(line, "instrumentKind", "fonds-euro")} />
       </View>
+      {line.instrumentKind === "uc" ? <Text style={styles.helper}>UC signifie « unité de compte ». Le code ISIN identifie chaque support de cette catégorie.</Text> : null}
       {line.instrumentKind === "uc" ? <>
-        <TextField label="Code ISIN" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. FR0010380675" autoCapitalize="characters" />
+        <TextField label="Code ISIN" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. FR0010380675" autoCapitalize="characters" helper="L’ISIN identifie le support choisi." />
         <View style={styles.pills}>{securities.map((security) => <Pill key={security.isin} label={security.shortName} onPress={() => update(line, "isin", security.isin)} />)}</View>
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(value) => update(line, "name", value)} placeholder="Fonds euro du contrat" />

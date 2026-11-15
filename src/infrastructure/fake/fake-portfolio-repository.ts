@@ -126,7 +126,7 @@ export class FakePortfolioRepository implements PortfolioRepository {
     const operation: Operation = {
       ...input,
       id: "session-" + this.nextId++,
-      label: input.kind === "dca" ? "Plan DCA enregistré" : "Versement enregistré",
+      label: input.kind === "dca" ? "Plan d’investissement enregistré" : "Versement enregistré",
       detail: input.kind === "dca"
         ? "Paramètres de plan enregistrés · résultat fourni par l’adaptateur de démonstration"
         : "Versement saisi dans le journal · aucun ordre transmis",

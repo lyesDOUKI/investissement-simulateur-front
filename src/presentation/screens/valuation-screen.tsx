@@ -6,7 +6,7 @@ import { formatDateLabel } from "@/presentation/utils/format-date";
 import { DateField } from "@/presentation/components/date-field";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-const units = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+const units = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
 
 export function ValuationResultScreen({ operation, date, annualReturnPct, result, error, loading, onDateChange, onAnnualReturnChange, onValue, onCompare }: {
   operation: Operation;
@@ -24,7 +24,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
     <PageHeading eyebrow="Résultat de valorisation" title="Valeur à une autre date" subtitle="La réponse du service métier pour votre opération." />
     <Card style={styles.source}>
       <Text style={styles.sourceTitle}>{operation.label}</Text>
-      <Text style={styles.meta}>{formatDateLabel(operation.date)} · {operation.kind === "dca" ? euro(operation.amount) + " / mois" : euro(operation.amount)}</Text>
+      <Text style={styles.meta}>{operation.kind === "dca" ? "Plan mis en place le " : "Versement réalisé le "}{formatDateLabel(operation.date)} · {operation.kind === "dca" ? euro(operation.amount) + " / mois" : euro(operation.amount)}</Text>
       <Text style={styles.meta}>{operation.detail}</Text>
     </Card>
 
@@ -32,21 +32,29 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
       <Card style={styles.hero}>
         <Text style={styles.heroLabel}>Valeur retournée au {formatDateLabel(result.valuationDate)}</Text>
         <Text style={styles.heroValue}>{euro(result.value)}</Text>
+        <Text style={styles.heroLabel}>Gain ou perte indicatif</Text>
         <Text style={styles.heroGain}>{result.gain >= 0 ? "+" : ""}{euro(result.gain)} · {result.gainRatePct.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %</Text>
         <Divider />
         <Text style={styles.heroLabel}>Capital investi : {euro(result.invested)}</Text>
         {operation.kind === "dca" ? <Text style={styles.heroLabel}>{result.installmentCount} échéances retournées</Text> : null}
         {result.assumptionPct !== undefined ? <Text style={styles.heroLabel}>Hypothèse transmise : {result.assumptionPct} % / an</Text> : null}
       </Card>
+      <Text style={styles.resultExplanation}>Cet écart compare la valeur retournée au capital investi. Il est fourni par le service et ne préjuge pas des performances futures.</Text>
       {result.hasMissingPrices ? <Card style={styles.warning}><Text style={styles.warningText}>Le service signale un ou plusieurs cours manquants. Consultez son résultat détaillé.</Text></Card> : null}
 
-      <SectionTitle title="Détail par support" />
+      <SectionTitle title={operation.kind === "dca" ? "Achats par support" : "Ce que votre versement a acheté"} />
+      {result.allocations.some((allocation) => allocation.instrumentKind === "uc") ? <Card style={styles.education}>
+        <Text style={styles.educationTitle}>Comprendre les parts</Text>
+        <Text style={styles.educationText}>Une part est une unité détenue sur un support. Le nombre et le prix affichés sont fournis par le service. Pour un DCA, chaque échéance peut acheter une quantité différente selon le cours du jour.</Text>
+      </Card> : null}
       {result.allocations.map((allocation) => <Card key={allocation.instrumentKind + allocation.isin} style={styles.detailCard}>
         <View style={styles.row}><Text style={styles.detailTitle}>{allocation.name}</Text><Text style={styles.detailValue}>{euro(allocation.value)}</Text></View>
         <Text style={styles.meta}>{allocation.instrumentKind === "uc" ? allocation.isin : "Fonds euro"}</Text>
-        <Text style={styles.meta}>Investi {euro(allocation.invested)} · {allocation.instrumentKind === "uc" ? units(allocation.shares) + " parts" : "rendement estimé"}</Text>
-        {allocation.instrumentKind === "uc" && allocation.observedDate ? <Text style={styles.meta}>Cours {allocation.observedPrice === undefined ? "indisponible" : euro(allocation.observedPrice)} · {formatDateLabel(allocation.observedDate)}</Text> : null}
-        <Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text>
+        <View style={styles.row}><Text style={styles.meta}>Montant investi</Text><Text style={styles.detailValue}>{euro(allocation.invested)}</Text></View>
+        {allocation.instrumentKind === "uc" ? <View style={styles.row}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.detailValue}>{units(allocation.shares)}</Text></View> : <Text style={styles.meta}>Valorisation du fonds euro estimée par le service</Text>}
+        {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <View style={styles.row}><Text style={styles.meta}>Prix moyen d’achat</Text><Text style={styles.detailValue}>{euro(allocation.averagePurchasePrice)}</Text></View> : null}
+        {allocation.instrumentKind === "uc" && allocation.observedDate ? <View style={styles.row}><Text style={styles.meta}>Dernier cours connu · {formatDateLabel(allocation.observedDate)}</Text><Text style={styles.detailValue}>{allocation.observedPrice === undefined ? "Indisponible" : euro(allocation.observedPrice)}</Text></View> : null}
+        <View style={styles.row}><Text style={styles.meta}>Gain ou perte sur ce support</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
       </Card>)}
 
       {result.installments.length > 0 ? <>
@@ -55,7 +63,11 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
           {result.installments.map((installment, index) => <View key={installment.executionDate + index} style={styles.installment}>
             <View style={styles.row}><Text style={styles.detailTitle}>{formatDateLabel(installment.dueDate)}</Text><Text style={styles.detailValue}>{euro(installment.amount)}</Text></View>
             <Text style={styles.meta}>Exécutée le {formatDateLabel(installment.executionDate)}</Text>
-            {installment.allocations.map((line, lineIndex) => <Text key={line.isin + lineIndex} style={styles.meta}>{line.isin} · {line.purchasePrice === undefined ? line.status : units(line.shares) + " parts à " + euro(line.purchasePrice)}</Text>)}
+            {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentAllocation}>
+              <Text style={styles.detailTitle}>{line.name}</Text>
+              <Text style={styles.meta}>{line.isin} · {euro(line.amount)} affectés</Text>
+              <Text style={styles.meta}>{line.purchasePrice === undefined ? line.status : units(line.shares) + " parts achetées à " + euro(line.purchasePrice) + (line.purchasePriceDate ? " · cours du " + formatDateLabel(line.purchasePriceDate) : "")}</Text>
+            </View>)}
             {index < result.installments.length - 1 ? <Divider /> : null}
           </View>)}
         </Card>
@@ -85,6 +97,9 @@ const styles = StyleSheet.create({
   warning: { backgroundColor: p.warning, marginTop: 10 },
   warningText: { color: p.warningText, fontSize: 12, lineHeight: 18 },
   detailCard: { gap: 7, marginBottom: 9 },
+  education: { gap: 5, backgroundColor: p.softGreen, marginBottom: 9 },
+  educationTitle: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
+  educationText: { color: p.ink, fontSize: 12, lineHeight: 18 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   detailTitle: { color: p.ink, fontSize: 14, fontWeight: "700", flex: 1 },
   detailValue: { color: p.ink, fontSize: 14, fontWeight: "700" },
@@ -92,7 +107,9 @@ const styles = StyleSheet.create({
   negative: { color: p.red, fontSize: 12, fontWeight: "700" },
   installments: { gap: 12 },
   installment: { gap: 7, paddingVertical: 5 },
+  installmentAllocation: { gap: 4, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 },
   parameters: { gap: 15 },
   error: { color: p.red, fontSize: 13, lineHeight: 18 },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 13, marginBottom: 8 },
+  resultExplanation: { color: p.muted, fontSize: 12, lineHeight: 18, marginTop: 8 },
 });

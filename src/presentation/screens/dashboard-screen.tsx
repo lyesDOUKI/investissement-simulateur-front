@@ -104,7 +104,7 @@ export function DashboardScreen({
 
           <View style={styles.actions}>
             <ActionButton label="＋ Versement réalisé" tone="light" onPress={onAddVersement} />
-            <ActionButton label="＋ Plan DCA" tone="light" onPress={onAddDca} />
+            <ActionButton label="＋ Plan d’investissement" tone="light" onPress={onAddDca} />
           </View>
 
           <SectionTitle
@@ -207,7 +207,7 @@ export function DashboardScreen({
           ) : (
             <Card>
               <Text style={text.label}>
-                Aucun plan DCA enregistré pour le moment.
+                Aucun plan à versements réguliers enregistré pour le moment.
               </Text>
               <Pressable onPress={onAddDca}>
                 <Text style={styles.link}>Enregistrer mon premier plan →</Text>

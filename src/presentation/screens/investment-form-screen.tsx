@@ -18,9 +18,9 @@ export function InvestmentFormScreen(props: {
   const { kind, total, lines, securities, date, executionDay, delayBusinessDays, error } = props;
   const d = (line: AllocationLine) => (field: ChangeField, value: string) => props.onLineChange(line.id, field, value);
   return <>
-    <PageHeading eyebrow={kind === "dca" ? "Plan d’investissement" : "Historique réel"}
-      title={kind === "dca" ? "Enregistrer un plan DCA" : "Enregistrer un versement"}
-      subtitle={kind === "dca" ? "Saisissez les paramètres de votre plan. Le service métier renverra les échéances et leur valorisation." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
+    <PageHeading eyebrow={kind === "dca" ? "Versements réguliers · DCA" : "Historique réel"}
+      title={kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
+      subtitle={kind === "dca" ? "DCA désigne des versements réguliers sur des supports choisis. Saisissez les paramètres du plan ; le service métier renverra ses échéances et leur valorisation." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
     <Card style={styles.card}>
       <TextField label={kind === "dca" ? "Montant à chaque échéance" : "Montant versé"} value={total}
         onChangeText={props.onTotalChange} placeholder="0" keyboardType="decimal-pad" suffix="€" />
@@ -41,9 +41,10 @@ export function InvestmentFormScreen(props: {
         {lines.length > 1 ? <Pressable onPress={() => props.onRemoveLine(line.id)}><Text style={styles.remove}>Retirer</Text></Pressable> : null}</View>
       <View style={styles.pills}><Pill label="UC · ISIN" active={line.instrumentKind === "uc"} onPress={() => d(line)("instrumentKind", "uc")} />
         <Pill label="Fonds euro" active={line.instrumentKind === "fonds-euro"} onPress={() => d(line)("instrumentKind", "fonds-euro")} /></View>
+      {line.instrumentKind === "uc" ? <Text style={styles.helper}>UC signifie « unité de compte ». Le code ISIN identifie chaque support de cette catégorie.</Text> : null}
       {line.instrumentKind === "uc" ? <>
         <TextField label="Code ISIN" value={line.isin} onChangeText={(v) => d(line)("isin", v.toUpperCase().replace(/\s/g, ""))}
-          placeholder="Ex. FR0010380675" autoCapitalize="characters" helper={securities.find((s) => s.isin === line.isin)?.name ?? "Choisissez ou saisissez le code du support."} />
+          placeholder="Ex. FR0010380675" autoCapitalize="characters" helper="L’ISIN est le code unique qui identifie le support." />
         <View style={styles.pills}>{securities.slice(0, 3).map((s) => <Pill key={s.isin} label={s.shortName} onPress={() => d(line)("isin", s.isin)} />)}</View>
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(v) => d(line)("name", v)} placeholder="Ex. Fonds euro contrat" />
