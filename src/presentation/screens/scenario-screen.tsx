@@ -3,6 +3,7 @@ import type { AllocationLine, Operation, Security } from "@/domain/models/operat
 import { ActionButton, Card, PageHeading, Pill, SectionTitle, TextField } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
+import { DateField } from "@/presentation/components/date-field";
 
 type AllocationField = "isin" | "amount" | "instrumentKind" | "name" | "annualReturnPct";
 
@@ -41,7 +42,7 @@ export function ScenarioFormScreen(props: {
     <Card style={styles.targetDate}>
       <Text style={styles.referenceEyebrow}>1 · DATE COMMUNE DE VALORISATION</Text>
       <Text style={styles.helper}>A et B seront valorisés à cette même date pour rendre leurs résultats comparables.</Text>
-      <TextField label="Date cible" value={date} onChangeText={props.onDateChange} placeholder="JJ/MM/AAAA" />
+      <DateField label="Date cible" value={date} onChange={props.onDateChange} />
     </Card>
 
     <Card style={styles.reference}>
@@ -67,7 +68,7 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{savedPlans.map((plan) => <Pill key={plan.id} label={formatDateLabel(plan.date) + " · " + plan.amount.toLocaleString("fr-FR") + " € / mois"} onPress={() => props.onUseSavedPlan(plan)} />)}</View>
       </View> : null}
 
-      <TextField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChangeText={props.onStartDateChange} placeholder="JJ/MM/AAAA" />
+      <DateField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChange={props.onStartDateChange} />
       <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} />
       {operation.kind === "dca" ? <>
         <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />

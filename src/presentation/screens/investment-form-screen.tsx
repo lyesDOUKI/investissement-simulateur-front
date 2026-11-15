@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { AllocationLine, Security } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, Pill, TextField } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
+import { DateField } from "@/presentation/components/date-field";
 
 type ChangeField = "isin" | "name" | "amount" | "instrumentKind" | "annualReturnPct";
 
@@ -23,8 +24,8 @@ export function InvestmentFormScreen(props: {
     <Card style={styles.card}>
       <TextField label={kind === "dca" ? "Montant à chaque échéance" : "Montant versé"} value={total}
         onChangeText={props.onTotalChange} placeholder="0" keyboardType="decimal-pad" suffix="€" />
-      <TextField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
-        onChangeText={props.onDateChange} placeholder="JJ/MM/AAAA" helper="Format : JJ/MM/AAAA" />
+      <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
+        onChange={props.onDateChange} helper="Sélectionnez la date dans le calendrier." />
       {kind === "dca" ? <>
         <TextField label="Jour de prélèvement mensuel" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" helper="Paramètre transmis au service métier." />
         <TextField label="Décalage avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" helper="Le calendrier et les règles d’exécution sont déterminés par le service métier." />
