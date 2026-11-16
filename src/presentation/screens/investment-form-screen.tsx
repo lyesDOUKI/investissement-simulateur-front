@@ -10,7 +10,7 @@ type ChangeField = AllocationDraftField;
 export function InvestmentFormScreen(props: {
   kind: "versement" | "dca"; total: string; lines: AllocationDraft[]; securities: Security[];
   date: string; executionDay: string; delayBusinessDays: string; error: string;
-  loading: boolean;
+  loading: boolean; autoSyncSingleSupport: boolean;
   onTotalChange: (value: string) => void; onLineChange: (id: string, field: ChangeField, value: string) => void;
   onAddLine: () => void; onRemoveLine: (id: string) => void; onDateChange: (value: string) => void;
   onExecutionDayChange: (value: string) => void; onDelayChange: (value: string) => void; onSubmit: () => void;
@@ -32,7 +32,7 @@ export function InvestmentFormScreen(props: {
       </> : null}
     </Card>
     <View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.title}>Répartition entre les supports</Text>
-      <Text style={styles.helper}>Répartissez le montant total entre les supports. La somme des lignes doit correspondre au montant saisi.</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
+      <Text style={styles.helper}>{props.autoSyncSingleSupport ? "Avec un seul support, son montant suit automatiquement le total. Ajoutez un support pour définir une répartition manuelle." : "Répartissez le montant total entre les supports. La somme des lignes doit correspondre au montant saisi."}</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
     {lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHead}><Text style={styles.title}>Ligne {index + 1}</Text>
         {lines.length > 1 ? <Pressable onPress={() => props.onRemoveLine(line.id)}><Text style={styles.remove}>Retirer</Text></Pressable> : null}</View>
@@ -51,7 +51,7 @@ export function InvestmentFormScreen(props: {
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(v) => d(line)("name", v)} placeholder="Ex. Fonds euro contrat" />
       </>}
-      <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" />
+      <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" editable={!props.autoSyncSingleSupport} helper={props.autoSyncSingleSupport ? "100 % du montant total ; mis à jour automatiquement." : undefined} />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.add}><Text style={styles.addText}>＋ Ajouter un support</Text></Pressable>
     <Card style={styles.summary}><Text style={styles.title}>À vérifier avant l’enregistrement</Text>

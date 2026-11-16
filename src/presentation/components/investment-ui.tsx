@@ -100,6 +100,7 @@ export function TextField({
   suffix,
   autoCapitalize,
   secureTextEntry,
+  editable = true,
 }: {
   label: string;
   value: string;
@@ -110,21 +111,23 @@ export function TextField({
   suffix?: string;
   autoCapitalize?: "none" | "characters" | "sentences";
   secureTextEntry?: boolean;
+  editable?: boolean;
 }) {
   return (
     <View style={ui.fieldWrap}>
       <Text style={ui.fieldLabel}>{label}</Text>
-      <View style={ui.inputShell}>
+      <View style={[ui.inputShell, !editable && ui.inputShellReadOnly]}>
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          editable={editable}
           placeholder={placeholder}
           placeholderTextColor={p.placeholder}
           keyboardType={keyboardType ?? "default"}
           autoCapitalize={autoCapitalize ?? "sentences"}
           autoCorrect={false}
           secureTextEntry={secureTextEntry}
-          style={ui.input}
+          style={[ui.input, !editable && ui.inputReadOnly]}
         />
         {suffix ? <Text style={ui.suffix}>{suffix}</Text> : null}
       </View>
@@ -230,6 +233,7 @@ const ui = StyleSheet.create({
     borderColor: p.line,
     backgroundColor: p.paper,
   },
+  inputShellReadOnly: { backgroundColor: p.surfaceSubtle },
   input: {
     flex: 1,
     color: p.ink,
@@ -237,6 +241,7 @@ const ui = StyleSheet.create({
     paddingVertical: 12,
     outlineStyle: "none" as never,
   },
+  inputReadOnly: { color: p.forestLight, fontWeight: "700" },
   suffix: { color: p.muted, fontSize: 14, marginLeft: 8 },
   helper: { color: p.muted, fontSize: 12, lineHeight: 17 },
   pill: {
