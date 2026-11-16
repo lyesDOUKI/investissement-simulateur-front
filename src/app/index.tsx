@@ -55,7 +55,7 @@ export default function HomeScreen(){
  const goTo=(destination:MainPage)=>{requestSequence.current+=1;setLoading(false);setBackStack([]);setPage(destination);setError("");};
  const goBack=useCallback(()=>{requestSequence.current+=1;setLoading(false);const previous=backStack[backStack.length-1]??(account?"dashboard":"login");setBackStack((current)=>current.slice(0,-1));setPage(previous);setError("");},[backStack,account]);
  useEffect(()=>{if(page==="login"||page==="dashboard"||page==="history"||page==="simulation")return;const subscription=BackHandler.addEventListener("hardwareBackPress",()=>{goBack();return true;});return ()=>subscription.remove();},[page,goBack]);
- useEffect(()=>{if(page==="comparison-result")scrollRef.current?.scrollTo({x:0,y:0,animated:true});},[page]);
+ useEffect(()=>{scrollRef.current?.scrollTo({x:0,y:0,animated:false});},[page]);
  const signIn=async()=>{setAuthLoading(true);setAuthError("");try{const signedIn=await dependencies.connectDemo.execute();await refresh();setAccount(signedIn);setBackStack([]);setPage("dashboard");}catch(e){dependencies.connectDemo.disconnect();setPortfolio(null);setAuthError(e instanceof Error?e.message:"Connexion impossible. Vérifiez le mock OIDC.");}finally{setAuthLoading(false);}};
  const signOut=()=>{requestSequence.current+=1;dependencies.connectDemo.disconnect();setAccount(null);setPortfolio(null);setPage("login");setBackStack([]);setAuthError("");setError("");};
  const startForm=(kind:OperationKind)=>{setFormKind(kind);setTotal(kind==="dca"?"100":"500");setLines([newLine("",kind==="dca"?100:500)]);setDate(today());setExecutionDay("10");setDelay("3");setError("");navigate("form");};
