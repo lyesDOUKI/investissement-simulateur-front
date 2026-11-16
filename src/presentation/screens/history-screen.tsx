@@ -49,11 +49,13 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
           </View>)}
         </View>
         <View style={styles.actions}>
-          <Pressable onPress={() => onValue(operation)} style={styles.actionButton}>
-            <Text style={styles.actionText}>Voir la valeur à une date →</Text>
+          <Pressable onPress={() => onValue(operation)} accessibilityRole="button" accessibilityLabel={`Valoriser ${operation.label} à une autre date`} style={({ pressed }) => [styles.actionButton, styles.actionButtonPrimary, pressed && styles.actionPressed]}>
+            <Text style={styles.actionTitlePrimary}>Valoriser</Text>
+            <Text style={styles.actionHintPrimary}>Voir à une autre date</Text>
           </Pressable>
-          {compareEnabled ? <Pressable onPress={() => onCompare(operation)} style={[styles.actionButton, styles.actionButtonSecondary]}>
-            <Text style={styles.actionText}>Comparer un scénario</Text>
+          {compareEnabled ? <Pressable onPress={() => onCompare(operation)} accessibilityRole="button" accessibilityLabel={`Comparer ${operation.label} avec une autre hypothèse`} style={({ pressed }) => [styles.actionButton, styles.actionButtonSecondary, pressed && styles.actionPressed]}>
+            <Text style={styles.actionTitleSecondary}>Comparer</Text>
+            <Text style={styles.actionHintSecondary}>Tester une hypothèse</Text>
           </Pressable> : null}
         </View>
       </Card>)}
@@ -82,9 +84,14 @@ const styles = StyleSheet.create({
   dot: { color: p.forestLight, fontSize: 8 },
   allocationName: { flex: 1, color: p.ink, fontSize: 12 },
   allocationAmount: { color: p.ink, fontSize: 12, fontWeight: "600" },
-  actions: { flexDirection: "row", gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 12 },
-  actionButton: { flex: 1, backgroundColor: p.softGreen, borderRadius: 14, minHeight: 43, alignItems: "center", justifyContent: "center", paddingHorizontal: 8 },
-  actionButtonSecondary: { flex: 0, minWidth: 95, backgroundColor: p.canvas },
-  actionText: { color: p.forestLight, fontSize: 12, fontWeight: "700" },
+  actions: { flexDirection: "row", gap: 9, borderTopWidth: 1, borderColor: p.line, paddingTop: 12 },
+  actionButton: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: 14, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, paddingVertical: 9, gap: 3 },
+  actionButtonPrimary: { backgroundColor: p.forest },
+  actionButtonSecondary: { backgroundColor: p.surfaceSubtle, borderWidth: 1, borderColor: p.line },
+  actionTitlePrimary: { color: p.onForest, fontSize: 13, fontWeight: "700" },
+  actionTitleSecondary: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
+  actionHintPrimary: { color: p.onForest, opacity: 0.82, fontSize: 10, textAlign: "center" },
+  actionHintSecondary: { color: p.muted, fontSize: 10, textAlign: "center" },
+  actionPressed: { opacity: 0.78, transform: [{ scale: 0.99 }] },
   disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 8 },
 });
