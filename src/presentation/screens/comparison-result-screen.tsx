@@ -77,7 +77,7 @@ function ScenarioDetails({ scenario, isDca }: { scenario: ComparisonScenario; is
   return <View style={styles.details}>
     <View style={styles.detailSection}>
       <Text style={styles.detailHeading}>Paramètres utilisés</Text>
-      {parameterDetails(parameters, isDca).map((detail, index) => <Text key={`${detail}-${index}`} style={styles.meta}>{detail}</Text>)}
+      {parameterDetails(parameters, isDca).map((detail, index) => <Text key={`${detail.text}-${index}`} style={[styles.meta, detail.kind === "assumption" && styles.assumptionLine]}>{detail.text}</Text>)}
       <SummaryMetric label="Gain / perte (%)" value={valuation.gainRatePct === null ? "Indisponible" : `${valuation.gainRatePct.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`} />
     </View>
 
@@ -145,17 +145,15 @@ function scenarioSetup(parameters: ComparisonParameters, isDca: boolean) {
 }
 
 function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
-  const details = [];
-  if (isDca && parameters.executionDay !== undefined) details.push(`Prélèvement le ${parameters.executionDay} · délai ${parameters.delayBusinessDays ?? 0} jours ouvrés`);
+  const details: { text: string; kind: "schedule" | "allocation" | "assumption" }[] = [];
+  if (isDca && parameters.executionDay !== undefined) details.push({ text: `Prélèvement le ${parameters.executionDay} · délai ${parameters.delayBusinessDays ?? 0} jours ouvrés`, kind: "schedule" });
   for (const allocation of parameters.allocations) {
     const amount = `${allocation.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`;
     const annualAssumption = allocation.instrumentKind === "uc"
       ? parameters.projectionAssumptions.find((item) => item.isin === allocation.isin)?.annualReturn
       : parameters.euroFundAssumptions.find((item) => item.name === allocation.name)?.annualRate;
-    const assumptionLabel = annualAssumption === undefined
-      ? ""
-      : ` · ${allocation.instrumentKind === "uc" ? "hypothèse" : "taux"} ${rate(annualAssumption)}`;
-    details.push(`${allocation.name ?? allocation.isin ?? "Fonds euro"} · ${amount}${assumptionLabel}`);
+    details.push({ text: `${allocation.name ?? allocation.isin ?? "Fonds euro"} · Montant ${amount}`, kind: "allocation" });
+    if (annualAssumption !== undefined) details.push({ text: `↳ ${allocation.instrumentKind === "uc" ? "Hypothèse de rendement" : "Taux fonds euro"} · ${rate(annualAssumption)}`, kind: "assumption" });
   }
   return details;
 }
@@ -201,7 +199,7 @@ const styles = StyleSheet.create({
   scenario: { flex: 1, gap: 7 }, scenarioHighlighted: { borderColor: p.forestLight, borderWidth: 1.5 }, scenarioHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, scenarioTitle: { color: p.ink, fontSize: 14, fontWeight: "700", flex: 1 }, scenarioTag: { color: p.muted, fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }, alternativeTag: { color: p.forestLight }, scenarioValue: { color: p.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5, marginTop: 2 }, scenarioSetup: { color: p.muted, fontSize: 11, lineHeight: 16 },
   summaryRows: { flexDirection: "row", gap: 8, marginTop: 2 }, summaryMetric: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }, summaryValue: { color: p.ink, fontSize: 11, fontWeight: "700", textAlign: "right" }, compactMetric: { flex: 1, gap: 3, padding: 8, borderRadius: 10, backgroundColor: p.surfaceSubtle }, compactLabel: { color: p.muted, fontSize: 10 }, compactValue: { color: p.ink, fontSize: 12, fontWeight: "700" },
   disclosure: { minHeight: 42, marginTop: 3, paddingTop: 8, borderTopWidth: 1, borderColor: p.line, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, disclosureText: { color: p.forestLight, fontSize: 12, fontWeight: "700" }, disclosureIcon: { color: p.forestLight, fontSize: 20, fontWeight: "500" },
-  details: { gap: 14, paddingTop: 5 }, detailSection: { gap: 7, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 }, detailHeading: { color: p.ink, fontSize: 12, fontWeight: "700" }, allocation: { gap: 6, paddingTop: 9, borderTopWidth: 1, borderColor: p.line }, allocationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, allocationTitle: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, meta: { color: p.muted, fontSize: 11, lineHeight: 16 }, assumption: { color: p.muted, fontSize: 11, lineHeight: 16 },
+  details: { gap: 14, paddingTop: 5 }, detailSection: { gap: 7, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 }, detailHeading: { color: p.ink, fontSize: 12, fontWeight: "700" }, allocation: { gap: 6, paddingTop: 9, borderTopWidth: 1, borderColor: p.line }, allocationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, allocationTitle: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, meta: { color: p.muted, fontSize: 11, lineHeight: 16 }, assumption: { color: p.muted, fontSize: 11, lineHeight: 16 }, assumptionLine: { marginLeft: 12, color: p.forestLight },
   installmentsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, installmentToggleText: { gap: 2 }, installment: { gap: 6, padding: 10, borderRadius: 12, backgroundColor: p.surfaceSubtle, marginTop: 4 }, installmentDate: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, installmentSupport: { gap: 6, paddingTop: 8, borderTopWidth: 1, borderColor: p.line },
   badge: { overflow: "hidden", paddingVertical: 4, paddingHorizontal: 7, borderRadius: 12, color: p.ink, fontSize: 9, fontWeight: "700" }, observedBadge: { backgroundColor: p.softGreen }, projectedBadge: { backgroundColor: p.warning }, missingBadge: { backgroundColor: p.line },
   topAction: { marginTop: 9 }, disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 15 },

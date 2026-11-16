@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, BackHandler, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, BackHandler, Pressable, ScrollView, StatusBar, StyleSheet, Text, View, type ScrollViewInstance } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { AllocationLine, InvestmentComparison, InvestmentValuation, Operation, OperationKind, Portfolio, ScenarioInput, Security } from "@/domain/models/operation";
 import type { UserAccount } from "@/domain/models/user-account";
@@ -45,12 +45,14 @@ export default function HomeScreen(){
  const [error,setError]=useState("");
  const [loading,setLoading]=useState(false);
  const requestSequence=useRef(0);
+ const scrollRef=useRef<ScrollViewInstance|null>(null);
 
  const refresh=async()=>{const [nextPortfolio,catalog]=await Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]);const known=new Map(catalog.map((s)=>[s.isin,s]));for(const op of nextPortfolio.operations)for(const line of op.allocations)if(line.instrumentKind==="uc"&&line.isin)known.set(line.isin,{isin:line.isin,name:line.name??line.isin,shortName:line.name??line.isin,color:"#7EB89A",instrumentKind:"uc"});setPortfolio(nextPortfolio);setSecurities([...known.values()]);};
  const navigate=(destination:Page)=>{setBackStack((current)=>[...current,page]);setPage(destination);};
  const goTo=(destination:MainPage)=>{requestSequence.current+=1;setLoading(false);setBackStack([]);setPage(destination);setError("");};
  const goBack=useCallback(()=>{requestSequence.current+=1;setLoading(false);const previous=backStack[backStack.length-1]??(account?"dashboard":"login");setBackStack((current)=>current.slice(0,-1));setPage(previous);setError("");},[backStack,account]);
  useEffect(()=>{if(page==="login"||page==="dashboard"||page==="history"||page==="simulation")return;const subscription=BackHandler.addEventListener("hardwareBackPress",()=>{goBack();return true;});return ()=>subscription.remove();},[page,goBack]);
+ useEffect(()=>{if(page==="comparison-result")scrollRef.current?.scrollTo({x:0,y:0,animated:true});},[page]);
  const signIn=async()=>{setAuthLoading(true);setAuthError("");try{const signedIn=await dependencies.connectDemo.execute();await refresh();setAccount(signedIn);setBackStack([]);setPage("dashboard");}catch(e){dependencies.connectDemo.disconnect();setPortfolio(null);setAuthError(e instanceof Error?e.message:"Connexion impossible. Vérifiez le mock OIDC.");}finally{setAuthLoading(false);}};
  const signOut=()=>{requestSequence.current+=1;dependencies.connectDemo.disconnect();setAccount(null);setPortfolio(null);setPage("login");setBackStack([]);setAuthError("");setError("");};
  const startForm=(kind:OperationKind)=>{setFormKind(kind);setTotal(kind==="dca"?"100":"500");setLines([newLine("",kind==="dca"?100:500)]);setDate(today());setExecutionDay("10");setDelay("3");setAnnualReturnPct("5");setError("");navigate("form");};
@@ -68,7 +70,7 @@ export default function HomeScreen(){
  const labels:Record<MainPage,string>={dashboard:"Accueil",history:"Journal",simulation:"Simuler"};
  return <SafeAreaView style={styles.safe} edges={["top","bottom"]}><StatusBar barStyle="light-content"/>
   {account&&!main&&page!=="register"?<View style={styles.context}><Pressable onPress={goBack} hitSlop={10} accessibilityRole="button" accessibilityLabel="Revenir à l’écran précédent" style={styles.back}><Text style={styles.backText}>‹ Retour</Text></Pressable><Text style={styles.brand}>ALTO<Text style={{color:p.forestLight}}>.</Text></Text><View style={{width:80}}/></View>:null}
-  <ScrollView style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation-result"||page==="valuation-details"||page==="scenario-form"||page==="simulation"||page==="account")&&styles.narrow,(page==="login"||page==="register")&&styles.authContent]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation-result"||page==="valuation-details"||page==="scenario-form"||page==="simulation"||page==="account")&&styles.narrow,(page==="login"||page==="register")&&styles.authContent]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
    {!account ? <LoginScreen error={authError} loading={authLoading} onSubmit={()=>void signIn()}/> : !portfolio?<View style={styles.initialLoading}><ActivityIndicator color={p.forestLight}/><Text style={styles.loadingText}>Chargement de votre espace…</Text></View>:<>
     {page==="dashboard"?<DashboardScreen portfolio={portfolio} securities={securities} account={account} onAccount={()=>navigate("account")} onAddVersement={()=>startForm("versement")} onAddDca={()=>startForm("dca")} onHistory={()=>goTo("history")} onValue={startValue}/>:null}
     {page==="simulation"?<SimulationScreen operations={portfolio.operations} onValue={startValue} onCompare={startScenario} compareEnabled={flags.comparison} onJournal={()=>goTo("history")}/>:null}
