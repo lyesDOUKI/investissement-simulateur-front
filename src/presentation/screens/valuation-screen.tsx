@@ -7,10 +7,19 @@ import { DateField } from "@/presentation/components/date-field";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-export function ValuationResultScreen({ operation, date, annualReturnPct, result, error, loading, compareEnabled, onDateChange, onAnnualReturnChange, onValue, onCompare, onDetails }: {
-  operation: Operation; date: string; annualReturnPct: string; result: InvestmentValuation | null; error: string; loading: boolean; compareEnabled: boolean;
-  onDateChange: (value: string) => void; onAnnualReturnChange: (value: string) => void; onValue: () => void; onCompare: () => void; onDetails: () => void;
+export function ValuationResultScreen({ operation, date, assumptions, result, error, loading, compareEnabled, onDateChange, onAssumptionChange, onValue, onCompare, onDetails }: {
+  operation: Operation; date: string; assumptions: Record<string, string>; result: InvestmentValuation | null; error: string; loading: boolean; compareEnabled: boolean;
+  onDateChange: (value: string) => void; onAssumptionChange: (isin: string, value: string) => void; onValue: () => void; onCompare: () => void; onDetails: () => void;
 }) {
+  const isFutureDate = (value: string) => {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+    if (!match) return false;
+    const target = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+    const now = new Date(); now.setHours(0, 0, 0, 0);
+    return target > now;
+  };
+  const future = isFutureDate(date);
+  const supports = [...new Set(operation.allocations.filter((allocation) => allocation.instrumentKind === "uc" && allocation.isin).map((allocation) => allocation.isin))];
   const hasProjection = result?.allocations.some((allocation) => allocation.status === "projected")
     || result?.installments.some((installment) => installment.nature === "projected" || installment.nature === "mixed" || installment.allocations.some((allocation) => allocation.status === "projected"));
 
@@ -25,7 +34,11 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
     <Card style={styles.parameters}>
       <Text style={styles.parametersTitle}>{result ? "Changer la date de valorisation" : "Choisir une date de valorisation"}</Text>
       <DateField label="Date cible" value={date} onChange={onDateChange} helper="La valeur sera demandée au service pour cette date." />
-      <TextField label="Taux annuel (hypothèse)" value={annualReturnPct} onChangeText={onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Transmis au service pour les projections futures." />
+      {future && supports.length > 0 ? <View style={styles.assumptions}>
+        <Text style={styles.parametersTitle}>Hypothèses de rendement</Text>
+        <Text style={styles.meta}>Une hypothèse par support UC. Elle ne s’applique que si le service doit projeter un cours futur.</Text>
+        {supports.map((isin) => <TextField key={isin} label={isin} value={assumptions[isin] ?? "5"} onChangeText={(value) => onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" />)}
+      </View> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ActionButton label={result ? "Actualiser la valorisation" : "Valoriser à cette date"} tone="dark" onPress={onValue} loading={loading} />
       {result && compareEnabled ? <ActionButton label="Comparer avec une autre hypothèse" tone="light" onPress={onCompare} /> : null}
@@ -56,7 +69,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
 
 const styles = StyleSheet.create({
   source: { gap: 6, marginBottom: 12 }, sourceTitle: { color: p.ink, fontSize: 15, fontWeight: "700" }, meta: { color: p.muted, fontSize: 12, lineHeight: 17 },
-  parameters: { gap: 14, marginBottom: 14, backgroundColor: p.surfaceSubtle }, parametersTitle: { color: p.ink, fontSize: 14, fontWeight: "700" },
+  parameters: { gap: 14, marginBottom: 14, backgroundColor: p.surfaceSubtle }, parametersTitle: { color: p.ink, fontSize: 14, fontWeight: "700" }, assumptions: { gap: 10, paddingTop: 3 },
   hero: { backgroundColor: p.forest, borderColor: p.forest, gap: 10, marginBottom: 8 }, heroLabel: { color: p.onForest, fontSize: 12 }, heroValue: { color: p.onForest, fontSize: 38, fontWeight: "700", letterSpacing: -0.8 }, heroGain: { color: p.mint, fontSize: 14, fontWeight: "700" },
   resultExplanation: { color: p.muted, fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 10 },
   detailsLink: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, padding: 15, backgroundColor: p.paper, borderColor: p.line, borderWidth: 1, borderRadius: 18, marginBottom: 10 }, detailsText: { flex: 1, gap: 4 }, detailsTitle: { color: p.forestLight, fontSize: 14, fontWeight: "700" }, chevron: { color: p.forestLight, fontSize: 26, fontWeight: "500" },

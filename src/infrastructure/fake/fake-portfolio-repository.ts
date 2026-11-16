@@ -143,7 +143,7 @@ export class FakePortfolioRepository implements PortfolioRepository {
     const fixture = operationId === demoPlan.id
       ? consoleLogResponse
       : operation?.kind === "versement" ? genericOneOffValuation : genericValuation;
-    return { ...fixture, operationId, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct };
+    return { ...fixture, operationId, valuationDate: input.valuationDate };
   }
 
   async compareOperation(operationId: string, input: ScenarioInput): Promise<InvestmentComparison> {

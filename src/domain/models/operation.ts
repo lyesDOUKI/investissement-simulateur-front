@@ -133,7 +133,7 @@ export interface CreateOperationInput {
 
 export interface ValueOperationInput {
   valuationDate: string;
-  annualReturnPct?: number;
+  projectionAssumptions: { isin: string; annualReturn: number }[];
 }
 
 export interface ScenarioInput {

@@ -80,7 +80,8 @@ export class HttpPortfolioRepository implements PortfolioRepository {
   }
   async valueOperation(id: string, input: ValueOperationInput): Promise<InvestmentValuation> {
     const op = this.operations.get(id) ?? await this.getById(id);
-    const projectionAssumptions = op.allocations.filter((a) => a.instrumentKind === "uc").map((a) => ({ isin: a.isin, annualReturn: (input.annualReturnPct ?? 5) / 100 }));
+    const availableIsins = new Set(op.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin));
+    const projectionAssumptions = input.projectionAssumptions.filter((assumption) => availableIsins.has(assumption.isin));
     const path = op.kind === "dca" ? "dca-investments" : "one-time-payments";
     const x = await this.request(`/${path}/${id}/simulations`, { method: "POST", body: JSON.stringify({ valuationDate: dateIso(input.valuationDate), projectionAssumptions }) });
     return this.valuation(x, op.kind);
