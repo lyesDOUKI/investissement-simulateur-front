@@ -85,21 +85,37 @@ export interface InvestmentValuation {
 }
 
 export interface PortfolioHolding {
-  isin: string;
+  instrumentKind?: InstrumentKind;
+  isin: string | null;
   name: string;
-  value: number;
-  sharePct: number;
-  color: string;
+  invested?: number;
+  shares?: number | null;
+  value: number | null;
+  sharePct: number | null;
+  status?: "observed" | "projected" | "unavailable";
+  observedDate?: string | null;
+  color?: string;
+}
+
+export interface PortfolioRecentActivity {
+  type: "ONE_TIME_PAYMENT" | "DCA_INSTALLMENT";
+  operationId: string;
+  date: string;
+  amount: number;
+  label: string;
+  detail: string;
 }
 
 /** Complete portfolio response returned by the application backend. */
 export interface Portfolio {
   asOfDate: string;
   invested: number;
-  value: number;
-  gain: number;
-  gainRatePct: number;
+  value: number | null;
+  gain: number | null;
+  gainRatePct: number | null;
   oneOffInvested: number;
+  valuationStatus?: "complete" | "partial";
+  recentActivity?: PortfolioRecentActivity | null;
   operations: Operation[];
   valuations: InvestmentValuation[];
   holdings: PortfolioHolding[];

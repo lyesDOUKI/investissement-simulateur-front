@@ -56,8 +56,10 @@ const genericOneOffValuation: InvestmentValuation = {
 const demoPortfolio: Portfolio = {
   asOfDate: "14/11/2026", invested: 300, value: 289.96, gain: -10.04,
   gainRatePct: -3.35, oneOffInvested: 0,
+  valuationStatus: "complete",
+  recentActivity: { type: "DCA_INSTALLMENT", operationId: demoPlan.id, date: "13/11/2026", amount: 100, label: "Échéance DCA exécutée", detail: "1 support acheté" },
   operations: [demoPlan], valuations: [consoleLogResponse],
-  holdings: [{ isin: "FR0010380675", name: "MSCI World", value: 289.96, sharePct: 100, color: "#7EB89A" }],
+  holdings: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", invested: 300, shares: 0.096583, value: 289.96, sharePct: 100, status: "observed", observedDate: "13/11/2026", color: "#7EB89A" }],
 };
 
 const demoAlternative: InvestmentValuation = {

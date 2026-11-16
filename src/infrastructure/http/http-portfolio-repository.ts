@@ -18,13 +18,55 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     return body;
   }
   async getPortfolio(asOfDate: string): Promise<Portfolio> {
-    const [p, d] = await Promise.all([this.request("/one-time-payments?page=0&size=100&sort=executionDate,desc"), this.request("/dca-investments?page=0&size=100&sort=configuredAt,desc")]);
+    const [summary, payments, plans] = await Promise.all([
+      this.request(`/portfolio/summary?valuationDate=${encodeURIComponent(dateIso(asOfDate))}`),
+      this.request("/one-time-payments?page=0&size=100&sort=executionDate,desc"),
+      this.request("/dca-investments?page=0&size=100&sort=configuredAt,desc"),
+    ]);
+    const dcaById = new Map<string, Operation>((plans.items ?? []).map((item: AnyObject) => {
+      const operation = this.plan(item);
+      return [operation.id, operation];
+    }));
+    for (const item of summary.dcaPlans ?? []) {
+      const operation = this.summaryPlan(item);
+      dcaById.set(operation.id, operation);
+    }
     const operations: Operation[] = [
-      ...(p.items ?? []).map((x: AnyObject) => this.payment(x)),
-      ...(d.items ?? []).map((x: AnyObject) => this.plan(x)),
+      ...(payments.items ?? []).map((x: AnyObject) => this.payment(x)),
+      ...dcaById.values(),
     ].sort((a, b) => dateIso(b.date).localeCompare(dateIso(a.date)));
     operations.forEach((op) => this.operations.set(op.id, op));
-    return { asOfDate, invested: 0, value: 0, gain: 0, gainRatePct: 0, oneOffInvested: 0, operations, valuations: [], holdings: [] };
+    const totals = summary.totals ?? {};
+    return {
+      asOfDate: dateLocal(summary.valuationDate) || asOfDate,
+      invested: totals.invested ?? 0,
+      value: totals.value ?? null,
+      gain: totals.gain ?? null,
+      gainRatePct: totals.gainRatePct ?? null,
+      oneOffInvested: totals.oneTimeInvested ?? 0,
+      valuationStatus: summary.valuationStatus === "PARTIAL" ? "partial" : "complete",
+      recentActivity: summary.recentActivity ? {
+        type: summary.recentActivity.type,
+        operationId: summary.recentActivity.operationId,
+        date: dateLocal(summary.recentActivity.date),
+        amount: summary.recentActivity.amount,
+        label: summary.recentActivity.label,
+        detail: summary.recentActivity.detail,
+      } : null,
+      operations,
+      valuations: [],
+      holdings: (summary.holdings ?? []).map((holding: AnyObject) => ({
+        instrumentKind: holding.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
+        isin: holding.isin ?? null,
+        name: holding.name ?? holding.isin ?? "Support",
+        invested: holding.invested ?? 0,
+        shares: holding.shares ?? null,
+        value: holding.value ?? null,
+        sharePct: holding.sharePct ?? null,
+        status: holding.status === "COURS" ? "observed" as const : holding.status === "PROJETEE" ? "projected" as const : "unavailable" as const,
+        observedDate: holding.observedDate ? dateLocal(holding.observedDate) : null,
+      })),
+    };
   }
   async getSecurities(): Promise<Security[]> { return []; }
   async createOperation(input: CreateOperationInput): Promise<Operation> {
@@ -51,6 +93,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
   private allocation(a: AnyObject, i: number) { return { id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.euroFundName, amount: a.amount ?? 0 }; }
   private payment(x: AnyObject): Operation { return { id: x.id, kind: "versement", label: "Versement réalisé", amount: x.amount, date: dateLocal(x.executionDate), detail: "Versement enregistré", allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
   private plan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
+  private summaryPlan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount ?? 0, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => ({ id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name, amount: a.monthlyAmount ?? 0 })) }; }
   private valuation(x: AnyObject, kind: Operation["kind"]): InvestmentValuation {
     const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
     const installments = (x.installments ?? []).map((i: AnyObject) => ({

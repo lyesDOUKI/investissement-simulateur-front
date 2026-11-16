@@ -18,8 +18,9 @@ import {
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 
-const euro = (amount: number) =>
-  `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const euro = (amount: number | null) => amount === null
+  ? "Indisponible"
+  : `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 export function DashboardScreen({
   portfolio,
@@ -41,11 +42,13 @@ export function DashboardScreen({
   onValue: (operation: Operation) => void;
 }) {
   const isWide = useWindowDimensions().width >= 960;
-  const gainRate = portfolio.gainRatePct;
   const contributed = portfolio.oneOffInvested;
   const holdings = portfolio.holdings;
   const plans = portfolio.operations.filter((item) => item.kind === "dca");
-  const latestActivity = portfolio.operations[0];
+  const latestActivity = portfolio.recentActivity;
+  const latestActivityOperation = latestActivity
+    ? portfolio.operations.find((item) => item.id === latestActivity.operationId)
+    : undefined;
   const todayLabel = new Date().toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
@@ -86,14 +89,15 @@ export function DashboardScreen({
               <Text style={styles.period}>{formatDateLabel(portfolio.asOfDate)}</Text>
             </View>
             <Text style={styles.heroValue}>{euro(portfolio.value)}</Text>
-            <View style={styles.heroGainRow}>
+            {portfolio.gain !== null && portfolio.gainRatePct !== null ? <View style={styles.heroGainRow}>
               <Text style={styles.heroGain}>
                 {portfolio.gain >= 0 ? "↗ " : "↘ "}{euro(portfolio.gain)} (
-                {gainRate.toFixed(2).replace(".", ",")} %)
+                {portfolio.gainRatePct.toFixed(2).replace(".", ",")} %)
               </Text>
               <Text style={styles.heroFootnote}>depuis le début</Text>
-            </View>
-            <Text style={styles.heroFootnote}>Valorisation indicative au {todayLabel}</Text>
+            </View> : <Text style={styles.heroFootnote}>Résultat indisponible pour cette valorisation</Text>}
+            {portfolio.valuationStatus === "partial" ? <Text style={styles.partialNotice}>Valorisation partielle · certains cours sont indisponibles</Text> : null}
+            <Text style={styles.heroFootnote}>Valorisation indicative au {formatDateLabel(portfolio.asOfDate)}</Text>
             <View style={styles.heroDivider} />
             <View style={styles.metrics}>
               <Metric label="Capital versé" value={euro(portfolio.invested)} />
@@ -121,7 +125,7 @@ export function DashboardScreen({
                 const security = securities.find((item) => item.isin === holding.isin);
                 return (
                   <View
-                    key={holding.isin}
+                    key={`${holding.instrumentKind ?? "support"}:${holding.isin ?? holding.name}`}
                     style={index > 0 ? styles.holdingSpaced : undefined}
                   >
                     {index > 0 ? <Divider /> : null}
@@ -136,26 +140,21 @@ export function DashboardScreen({
                         <Text style={styles.holdingName}>
                           {security?.shortName ?? holding.name}
                         </Text>
-                        <Text style={styles.holdingIsin}>{holding.isin}</Text>
+                        <Text style={styles.holdingIsin}>{holding.isin ?? "Fonds euro"}</Text>
                       </View>
                       <View style={styles.holdingValue}>
                         <Text style={styles.holdingAmount}>{euro(holding.value)}</Text>
                         <Text style={styles.holdingPercent}>
-                          {holding.sharePct.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %
+                          {holding.sharePct === null ? "—" : `${holding.sharePct.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`}
                         </Text>
                       </View>
                     </View>
-                    <View style={styles.track}>
-                      <View
-                        style={[
-                          styles.trackFill,
-                          {
-                            width: `${holding.sharePct}%`,
-                            backgroundColor: holding.color ?? security?.color ?? p.forestLight,
-                          },
-                        ]}
-                      />
-                    </View>
+                    {holding.status === "unavailable" ? <Text style={styles.holdingIsin}>Valeur indisponible</Text> : null}
+                    {holding.status === "projected" ? <Text style={styles.holdingIsin}>Valeur projetée par le service</Text> : null}
+                    {holding.observedDate ? <Text style={styles.holdingIsin}>Cours observé au {formatDateLabel(holding.observedDate)}</Text> : null}
+                    {holding.sharePct !== null ? <View style={styles.track}>
+                      <View style={[styles.trackFill, { width: `${holding.sharePct}%`, backgroundColor: holding.color ?? security?.color ?? p.forestLight }]} />
+                    </View> : null}
                   </View>
                 );
               })
@@ -225,24 +224,18 @@ export function DashboardScreen({
           />
           {latestActivity ? (
             <Pressable
-              onPress={() =>
-                onValue(latestActivity)
-              }
+              onPress={() => latestActivityOperation ? onValue(latestActivityOperation) : onHistory()}
             >
               <Card style={styles.activityCard}>
                 <View style={styles.activityIcon}>
                   <Text style={styles.activityIconText}>
-                    {latestActivity.kind === "dca" ? "↻" : "↑"}
+                    {latestActivity.type === "DCA_INSTALLMENT" ? "↻" : "↑"}
                   </Text>
                 </View>
                 <View style={styles.activityMain}>
-                  <Text style={styles.activityTitle}>
-                    {latestActivity.label}
-                  </Text>
+                  <Text style={styles.activityTitle}>{latestActivity.label}</Text>
                   <Text style={styles.planMeta}>{latestActivity.detail}</Text>
-                  <Text style={styles.planMeta}>
-                    {formatDateLabel(latestActivity.date)}
-                  </Text>
+                  <Text style={styles.planMeta}>{formatDateLabel(latestActivity.date)}</Text>
                 </View>
                 <Text style={styles.activityAmount}>
                   {euro(latestActivity.amount)}
@@ -251,7 +244,7 @@ export function DashboardScreen({
             </Pressable>
           ) : null}
           <Text style={styles.disclaimer}>
-            Valeurs et cours historiques de démonstration. Cette application
+            Valeurs fournies par le service à titre indicatif. Cette application
             suit et simule vos opérations sans transmettre d’ordre au courtier.
           </Text>
         </View>
@@ -350,6 +343,7 @@ const styles = StyleSheet.create({
   },
   heroGain: { color: p.mint, fontSize: 13, fontWeight: "700" },
   heroFootnote: { color: "#B6C9BF", fontSize: 12 },
+  partialNotice: { color: "#FFD69A", fontSize: 11, lineHeight: 16, marginTop: 5 },
   chart: {
     height: 106,
     marginTop: 20,
