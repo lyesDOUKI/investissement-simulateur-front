@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   holdingDot: { width: 9, height: 9, borderRadius: 5 },
   holdingTitle: { flex: 1, gap: 3 },
   holdingName: { color: p.ink, fontSize: 14, fontWeight: "700" },
-  holdingIsin: { color: p.muted, fontSize: 11 },
+  holdingIsin: { color: p.muted, fontSize: 11, marginBottom: 8 },
   holdingValue: { alignItems: "flex-end", gap: 3 },
   holdingAmount: { color: p.ink, fontSize: 14, fontWeight: "700" },
   holdingPercent: { color: p.muted, fontSize: 11 },
