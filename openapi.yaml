@@ -904,24 +904,10 @@ components:
           description: Hypothèses annuelles par ISIN. 0.05 représente 5 %.
           items:
             $ref: "#/components/schemas/ComparisonProjectionAssumption"
-        euroFundAssumptions:
-          type: array
-          description: Hypothèses annuelles par fonds euro. 0.03 représente 3 %.
-          items:
-            $ref: "#/components/schemas/ComparisonEuroFundAssumption"
       required:
       - alternative
-      - euroFundAssumptions
       - projectionAssumptions
       - valuationDate
-    ComparisonEuroFundAssumption:
-      type: object
-      description: Hypothèse de taux annualisé fournie pour un fonds euro
-      properties:
-        name:
-          type: string
-        annualRate:
-          type: number
     ComparisonProjectionAssumption:
       type: object
       description: Hypothèse de rendement annualisée fournie pour un ISIN
@@ -969,10 +955,6 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/ComparisonProjectionAssumption"
-          euroFundAssumptions:
-            type: array
-            items:
-              $ref: "#/components/schemas/ComparisonEuroFundAssumption"
       description: Paramètres utilisés pour un plan DCA
     ComparisonOneTimePaymentParameters:
       allOf:
@@ -992,10 +974,6 @@ components:
             type: array
             items:
               $ref: "#/components/schemas/ComparisonProjectionAssumption"
-          euroFundAssumptions:
-            type: array
-            items:
-              $ref: "#/components/schemas/ComparisonEuroFundAssumption"
       description: Paramètres utilisés pour un versement ponctuel
     InvestmentComparisonParameters:
       description: "Configuration du scénario, avec les hypothèses communes reçues"
@@ -1344,14 +1322,8 @@ components:
           description: Hypothèses annuelles par ISIN. 0.05 représente 5 %.
           items:
             $ref: "#/components/schemas/ComparisonProjectionAssumption"
-        euroFundAssumptions:
-          type: array
-          description: Hypothèses annuelles par fonds euro. 0.03 représente 3 %.
-          items:
-            $ref: "#/components/schemas/ComparisonEuroFundAssumption"
       required:
       - alternative
-      - euroFundAssumptions
       - projectionAssumptions
       - valuationDate
     PortfolioDcaAllocationResponse:
