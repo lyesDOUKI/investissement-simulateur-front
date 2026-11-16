@@ -26,11 +26,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     operations.forEach((op) => this.operations.set(op.id, op));
     return { asOfDate, invested: 0, value: 0, gain: 0, gainRatePct: 0, oneOffInvested: 0, operations, valuations: [], holdings: [] };
   }
-  async getSecurities(): Promise<Security[]> { return [
-    { isin: "FR0010380675", name: "Lyxor MSCI World", shortName: "MSCI World", color: "#7EB89A", instrumentKind: "uc" },
-    { isin: "IE00B4L5Y983", name: "iShares Core MSCI World", shortName: "World Core", color: "#7FA9F8", instrumentKind: "uc" },
-    { isin: "IE00B53SZB19", name: "iShares Nasdaq 100", shortName: "Nasdaq 100", color: "#D6AA6C", instrumentKind: "uc" },
-  ]; }
+  async getSecurities(): Promise<Security[]> { return []; }
   async createOperation(input: CreateOperationInput): Promise<Operation> {
     const allocations = input.allocations.map((a) => a.instrumentKind === "uc" ? { instrumentKind: "UNIT_LINKED", isin: a.isin, amount: a.amount } : { instrumentKind: "EURO_FUND", name: a.name, amount: a.amount });
     const path = input.kind === "dca" ? "/dca-investments" : "/one-time-payments";

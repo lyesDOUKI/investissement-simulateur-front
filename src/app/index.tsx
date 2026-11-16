@@ -46,7 +46,7 @@ export default function HomeScreen(){
  const [loading,setLoading]=useState(false);
  const requestSequence=useRef(0);
 
- const refresh=async()=>{const [nextPortfolio,nextSecurities]=await Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]);setPortfolio(nextPortfolio);setSecurities(nextSecurities);};
+ const refresh=async()=>{const [nextPortfolio,catalog]=await Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]);const known=new Map(catalog.map((s)=>[s.isin,s]));for(const op of nextPortfolio.operations)for(const line of op.allocations)if(line.instrumentKind==="uc"&&line.isin)known.set(line.isin,{isin:line.isin,name:line.name??line.isin,shortName:line.name??line.isin,color:"#7EB89A",instrumentKind:"uc"});setPortfolio(nextPortfolio);setSecurities([...known.values()]);};
  const navigate=(destination:Page)=>{setBackStack((current)=>[...current,page]);setPage(destination);};
  const goTo=(destination:MainPage)=>{requestSequence.current+=1;setLoading(false);setBackStack([]);setPage(destination);setError("");};
  const goBack=useCallback(()=>{requestSequence.current+=1;setLoading(false);const previous=backStack[backStack.length-1]??(account?"dashboard":"login");setBackStack((current)=>current.slice(0,-1));setPage(previous);setError("");},[backStack,account]);
