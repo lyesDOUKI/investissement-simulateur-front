@@ -1,0 +1,864 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI definition
+  version: v0
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+security:
+- bearerAuth: []
+paths:
+  /one-time-payments:
+    get:
+      tags:
+      - Versements uniques
+      summary: Lister les versements uniques du client authentifié
+      operationId: listOneTimePayments
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        "200":
+          description: Page de versements
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OneTimePaymentListResponse"
+    post:
+      tags:
+      - Versements uniques
+      summary: Enregistrer un versement unique
+      description: "Récupère les prix à la date d'exécution, calcule les parts de\
+        \ chaque ligne et persiste le versement."
+      operationId: recordOneTimePayment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordOneTimePaymentRequest"
+        required: true
+      responses:
+        "201":
+          description: Versement enregistré
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreatedOperationResponse"
+        "400":
+          description: Requête invalide
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: Règle métier non respectée (code dans la propriété `code`)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+  /one-time-payments/{paymentId}/simulations:
+    post:
+      tags:
+      - Versements uniques
+      summary: Simuler la valorisation d'un versement
+      description: Valorise le versement à la date demandée. Fournir une hypothèse
+        annualReturn décimale pour chaque allocation dont le cours doit être projeté
+        à une date future. Le fonds euro utilise le taux de son adapter (0 par défaut).
+      operationId: simulateOneTimePayment
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValuationRequest"
+        required: true
+      responses:
+        "200":
+          description: Valorisation calculée
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SimulationValuationResponse"
+        "400":
+          description: Requête invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Versement introuvable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "403":
+          description: Le versement appartient à un autre client
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: Prix ou hypothèse de projection indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+  /dca-investments:
+    get:
+      tags:
+      - Plans DCA
+      summary: Lister les plans DCA du client authentifié
+      operationId: listDcaInvestments
+      parameters:
+      - name: page
+        in: query
+        description: Zero-based page index (0..N)
+        required: false
+        schema:
+          type: integer
+          default: 0
+          minimum: 0
+      - name: size
+        in: query
+        description: The size of the page to be returned
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+      - name: sort
+        in: query
+        description: "Sorting criteria in the format: property,(asc|desc). Default\
+          \ sort order is ascending. Multiple sort criteria are supported."
+        required: false
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        "200":
+          description: Page de plans DCA
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DcaInvestmentListResponse"
+    post:
+      tags:
+      - Plans DCA
+      summary: Créer un plan DCA
+      description: Enregistre l'allocation mensuelle et calcule la première échéance.
+        La somme des allocations doit être égale à amount.
+      operationId: record
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordDcaInvestmentRequest"
+        required: true
+      responses:
+        "201":
+          description: Plan DCA créé
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/CreatedOperationResponse"
+        "400":
+          description: Requête invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: Somme de l'allocation différente du montant mensuel
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+  /dca-investments/{dcaInvestmentId}/simulations:
+    post:
+      tags:
+      - Plans DCA
+      summary: Simuler la valorisation d'un plan DCA
+      description: Valorise chaque échéance à la date demandée. Fournir une hypothèse
+        annualReturn décimale pour chaque allocation dont le cours d'achat ou le cours
+        de valorisation doit être projeté dans le futur. Le fonds euro utilise son
+        taux fourni par l'adapter (0 par défaut).
+      operationId: simulate
+      parameters:
+      - name: dcaInvestmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValuationRequest"
+        required: true
+      responses:
+        "200":
+          description: Valorisation calculée
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/SimulationValuationResponse"
+        "400":
+          description: Requête invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Plan DCA introuvable
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "403":
+          description: Le plan DCA appartient à un autre client
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: Prix ou hypothèse de projection indisponible
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+  /one-time-payments/{paymentId}:
+    get:
+      tags:
+      - Versements uniques
+      summary: Consulter un versement unique
+      description: "Retourne les données persistées du versement et de ses lignes,\
+        \ y compris les prix et parts enregistrés pour les unités de compte."
+      operationId: getOneTimePayment
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Versement trouvé
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/OneTimePaymentDetailsResponse"
+        "400":
+          description: Identifiant invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Versement introuvable au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+  /dca-investments/{dcaInvestmentId}:
+    get:
+      tags:
+      - Plans DCA
+      summary: Consulter un plan DCA
+      description: "Retourne la configuration, les dates de première échéance persisté\
+        es et les allocations enregistrées, sans recalcul."
+      operationId: getDcaInvestment
+      parameters:
+      - name: dcaInvestmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        "200":
+          description: Plan DCA trouvé
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/DcaInvestmentDetailsResponse"
+        "400":
+          description: Identifiant invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Plan DCA introuvable au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+components:
+  schemas:
+    AllocationRequest:
+      discriminator:
+        propertyName: instrumentKind
+        mapping:
+          UNIT_LINKED: "#/components/schemas/UnitLinkedAllocationRequest"
+          EURO_FUND: "#/components/schemas/EuroFundAllocationRequest"
+      oneOf:
+      - $ref: "#/components/schemas/UnitLinkedAllocationRequest"
+      - $ref: "#/components/schemas/EuroFundAllocationRequest"
+      properties:
+        instrumentKind:
+          type: string
+      required:
+      - instrumentKind
+    EuroFundAllocationRequest:
+      allOf:
+      - $ref: "#/components/schemas/AllocationRequest"
+      - type: object
+        properties:
+          name:
+            type: string
+            minLength: 1
+          amount:
+            type: number
+      description: Allocation vers un fonds en euros identifié par son nom
+      required:
+      - amount
+      - name
+    RecordOneTimePaymentRequest:
+      type: object
+      description: Enregistrement d'un versement unique
+      properties:
+        amount:
+          type: number
+          description: "Montant total du versement, en euros"
+          example: 3000.0
+        date:
+          type: string
+          format: date
+          description: Date du versement (ISO 8601)
+          example: 2026-06-10
+        allocations:
+          type: array
+          description: Supports du versement. La somme des lignes doit être égale
+            au montant total.
+          items:
+            $ref: "#/components/schemas/AllocationRequest"
+          minItems: 1
+      required:
+      - allocations
+      - amount
+      - date
+    UnitLinkedAllocationRequest:
+      allOf:
+      - $ref: "#/components/schemas/AllocationRequest"
+      - type: object
+        properties:
+          isin:
+            type: string
+            pattern: "^[A-Z0-9]{12}$"
+          amount:
+            type: number
+      description: Allocation vers une unité de compte identifiée par son ISIN
+      required:
+      - amount
+      - isin
+    CreatedOperationResponse:
+      type: object
+      description: Identifiant et montant de l'opération créée. Les détails sont disponibles
+        sur l'endpoint GET de la ressource.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant de l'opération créée
+        amount:
+          type: number
+          description: Montant total du versement ou montant mensuel du plan DCA en
+            euros
+          example: 300.0
+    ApiProblem:
+      type: object
+      description: Erreur HTTP au format RFC 9457 Problem Details avec un code applicatif
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI identifiant le type de problème
+          example: urn:ld:investment-simulator:problem:PRICE_UNAVAILABLE
+        title:
+          type: string
+          example: Prix indisponible
+        status:
+          type: integer
+          format: int32
+          example: 422
+        detail:
+          type: string
+          example: Aucun prix disponible pour IE00B4L5Y983 à la date demandée.
+        instance:
+          type: string
+          format: uri
+          description: URI de la requête ayant échoué
+          example: /one-time-payments/uuid/simulations
+        code:
+          type: string
+          description: Code applicatif stable pour le traitement client
+          example: PRICE_UNAVAILABLE
+        violations:
+          type: array
+          description: "Liste des erreurs de validation, présente pour INVALID_REQUEST"
+          items:
+            type: string
+    ProjectionAssumption:
+      type: object
+      description: Taux annuel hypothétique de projection pour un ISIN
+      properties:
+        isin:
+          type: string
+          description: Code ISIN du support
+          example: IE00B4L5Y983
+          pattern: "^[A-Z0-9]{12}$"
+        annualReturn:
+          type: number
+          description: "Taux sous forme décimale : 0.05 signifie 5 %, -0.10 signifie\
+            \ -10 %"
+          example: 0.05
+          minimum: -1
+      required:
+      - annualReturn
+      - isin
+    ValuationRequest:
+      type: object
+      description: Date de valorisation et hypothèses de projection par unité de compte
+      properties:
+        valuationDate:
+          type: string
+          format: date
+          description: Date à laquelle valoriser l'opération (ISO 8601)
+          example: 2026-01-01
+        projectionAssumptions:
+          type: array
+          description: "Hypothèses annuelles prioritaires par support, sous forme\
+            \ décimale"
+          items:
+            $ref: "#/components/schemas/ProjectionAssumption"
+      required:
+      - projectionAssumptions
+      - valuationDate
+    DcaInstallmentValuationResponse:
+      type: object
+      description: Valorisation et achats réalisés pour une échéance du plan DCA
+      properties:
+        dueDate:
+          type: string
+          format: date
+        executionDate:
+          type: string
+          format: date
+        amount:
+          type: number
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/DcaPurchaseAllocationResponse"
+    DcaPurchaseAllocationResponse:
+      type: object
+      description: Achat d'un support effectué lors d'une échéance DCA
+      properties:
+        instrumentKind:
+          type: string
+          description: Type de support
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type: string
+          description: ISIN pour une unité de compte
+        name:
+          type: string
+          description: Nom du support
+        amount:
+          type: number
+          description: Montant affecté à cet achat en euros
+        shares:
+          type: number
+          description: Nombre de parts acquises pour une unité de compte
+        purchasePrice:
+          type: number
+          description: Prix d'achat unitaire en euros pour une unité de compte
+        purchasePriceDate:
+          type: string
+          format: date
+          description: Date du prix utilisé pour l'achat
+        status:
+          type: string
+          description: Origine du prix d'achat
+          enum:
+          - COURS
+          - PROJETEE
+    DcaValuationResponse:
+      type: object
+      description: Calcul détaillé de valorisation d'un plan DCA
+      properties:
+        operationId:
+          type: string
+          format: uuid
+          description: Identifiant du plan DCA valorisé
+        valuationDate:
+          type: string
+          format: date
+          description: Date de valorisation
+        invested:
+          type: number
+          description: Montant total investi en euros
+        value:
+          type: number
+          description: Valeur totale à la date de valorisation en euros
+        gain:
+          type: number
+          description: Gain ou perte en euros
+        gainRatePct:
+          type: number
+          description: Gain ou perte en pourcentage du montant investi
+        installments:
+          type: array
+          description: Valorisation détaillée des échéances exécutées
+          items:
+            $ref: "#/components/schemas/DcaInstallmentValuationResponse"
+        allocations:
+          type: array
+          description: Valorisation agrégée par support
+          items:
+            $ref: "#/components/schemas/ValuedAllocationResponse"
+    PaymentValuationResponse:
+      type: object
+      description: Calcul détaillé de valorisation d'un versement unique
+      properties:
+        operationId:
+          type: string
+          format: uuid
+          description: Identifiant du versement valorisé
+        valuationDate:
+          type: string
+          format: date
+          description: Date de valorisation
+        invested:
+          type: number
+          description: Montant total investi en euros
+        value:
+          type: number
+          description: Valeur totale à la date de valorisation en euros
+        gain:
+          type: number
+          description: Gain ou perte en euros
+        gainRatePct:
+          type: number
+          description: Gain ou perte en pourcentage du montant investi
+        allocations:
+          type: array
+          description: Valorisation agrégée par support
+          items:
+            $ref: "#/components/schemas/ValuedAllocationResponse"
+    SimulationValuationResponse:
+      description: Réponse de valorisation fermée aux scénarios versement unique et
+        DCA
+      oneOf:
+      - $ref: "#/components/schemas/PaymentValuationResponse"
+      - $ref: "#/components/schemas/DcaValuationResponse"
+    ValuedAllocationResponse:
+      type: object
+      description: Valorisation d'un support agrégée sur l'opération simulée
+      properties:
+        instrumentKind:
+          type: string
+          description: Type de support
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type: string
+          description: ISIN pour une unité de compte
+        name:
+          type: string
+          description: Nom du support
+        invested:
+          type: number
+          description: Montant investi en euros
+        shares:
+          type: number
+          description: Nombre de parts pour une unité de compte
+        averagePurchasePrice:
+          type: number
+          description: Prix moyen d'achat en euros pour une unité de compte
+        observedPrice:
+          type: number
+          description: Dernier prix de marché observé en euros
+        observedDate:
+          type: string
+          format: date
+          description: Date du dernier prix de marché observé
+        value:
+          type: number
+          description: Valeur du support à la date de valorisation en euros
+        gain:
+          type: number
+          description: Gain ou perte en euros
+        status:
+          type: string
+          description: Origine du prix de valorisation
+          enum:
+          - COURS
+          - PROJETEE
+    RecordDcaInvestmentRequest:
+      type: object
+      description: Création d'un plan d'investissement programmé
+      properties:
+        amount:
+          type: number
+          description: Montant de chaque versement mensuel en euros
+          example: 300.0
+        date:
+          type: string
+          format: date
+          description: Date de début du plan
+          example: 2026-06-01
+        executionDay:
+          type: integer
+          format: int32
+          description: Jour d'exécution souhaité (1 à 31)
+          example: 5
+          maximum: 31
+          minimum: 1
+        delayBusinessDays:
+          type: integer
+          format: int32
+          description: Décalage d'exécution en jours ouvrés
+          example: 2
+          maximum: 365
+          minimum: 0
+        allocations:
+          type: array
+          description: Supports de chaque versement mensuel
+          items:
+            $ref: "#/components/schemas/AllocationRequest"
+          minItems: 1
+      required:
+      - allocations
+      - amount
+      - date
+    OneTimePaymentAllocationResponse:
+      type: object
+      description: Ligne persistée d'un versement. Les champs spécifiques à l'autre
+        type de support sont absents.
+      properties:
+        instrumentKind:
+          type: string
+          description: Type fermé de support
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type: string
+          description: ISIN pour une unité de compte
+          example: IE00B4L5Y983
+        euroFundName:
+          type: string
+          description: Nom du fonds euro
+        amount:
+          type: number
+          description: Montant investi en euros
+          example: 1500.0
+        unitPrice:
+          type: number
+          description: Prix unitaire enregistré en euros pour une unité de compte
+          example: 125.5
+        shares:
+          type: number
+          description: Nombre de parts enregistré pour une unité de compte
+          example: 11.952191
+    OneTimePaymentDetailsResponse:
+      type: object
+      description: Versement unique persisté avec ses lignes d'allocation et les données
+        de prix enregistrées
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant du versement
+        clientId:
+          type: string
+          format: uuid
+          description: Identifiant du client
+        amount:
+          type: number
+          description: Montant total du versement en euros
+          example: 3000.0
+        executionDate:
+          type: string
+          format: date
+          description: Date d'exécution enregistrée
+          example: 2026-06-10
+        allocations:
+          type: array
+          description: Lignes enregistrées dans le versement
+          items:
+            $ref: "#/components/schemas/OneTimePaymentAllocationResponse"
+    OneTimePaymentListResponse:
+      type: object
+      description: Page des versements uniques du client authentifié
+      properties:
+        items:
+          type: array
+          description: Versements de la page courante
+          items:
+            $ref: "#/components/schemas/OneTimePaymentDetailsResponse"
+        pagination:
+          $ref: "#/components/schemas/PaginationResponse"
+          description: Pagination de la liste
+    PaginationResponse:
+      type: object
+      description: Métadonnées de pagination de la page retournée
+      properties:
+        page:
+          type: integer
+          format: int32
+          description: "Numéro de page, à partir de zéro"
+          example: 0
+        size:
+          type: integer
+          format: int32
+          description: Nombre maximal d'éléments demandé
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          description: Nombre total d'éléments correspondant au client
+          example: 42
+        totalPages:
+          type: integer
+          format: int32
+          description: Nombre total de pages
+          example: 3
+        first:
+          type: boolean
+          description: Indique si la page est la première
+        last:
+          type: boolean
+          description: Indique si la page est la dernière
+    DcaInvestmentAllocationResponse:
+      type: object
+      description: Ligne de répartition mensuelle. Le champ propre à l'autre type
+        de support est absent.
+      properties:
+        instrumentKind:
+          type: string
+          description: Type fermé de support
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type: string
+          description: ISIN pour une unité de compte
+          example: IE00B4L5Y983
+        euroFundName:
+          type: string
+          description: Nom du fonds euro
+        amount:
+          type: number
+          description: Montant mensuel affecté à ce support en euros
+          example: 150.0
+    DcaInvestmentDetailsResponse:
+      type: object
+      description: Plan DCA persisté avec sa configuration et les lignes de répartition
+        enregistrées
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant du plan DCA
+        clientId:
+          type: string
+          format: uuid
+          description: Identifiant du client
+        monthlyAmount:
+          type: number
+          description: Montant mensuel en euros
+          example: 300.0
+        configuredAt:
+          type: string
+          format: date
+          description: Date de mise en place enregistrée
+          example: 2026-06-01
+        paymentDay:
+          type: integer
+          format: int32
+          description: "Jour de prélèvement configuré, entre 1 et 31"
+          example: 5
+        businessDayDelay:
+          type: integer
+          format: int32
+          description: Décalage en jours ouvrés configuré
+          example: 2
+        firstPaymentDueDate:
+          type: string
+          format: date
+          description: Date de première échéance persistée
+          example: 2026-06-05
+        firstPaymentExpectedExecution:
+          type: string
+          format: date
+          description: Date d'exécution attendue persistée pour la première échéance
+          example: 2026-06-09
+        allocations:
+          type: array
+          description: Lignes de répartition mensuelle enregistrées
+          items:
+            $ref: "#/components/schemas/DcaInvestmentAllocationResponse"
+    DcaInvestmentListResponse:
+      type: object
+      description: Page des plans DCA du client authentifié
+      properties:
+        items:
+          type: array
+          description: Plans DCA de la page courante
+          items:
+            $ref: "#/components/schemas/DcaInvestmentDetailsResponse"
+        pagination:
+          $ref: "#/components/schemas/PaginationResponse"
+          description: Pagination de la liste
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
