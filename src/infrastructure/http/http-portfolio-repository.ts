@@ -52,9 +52,27 @@ export class HttpPortfolioRepository implements PortfolioRepository {
   private payment(x: AnyObject): Operation { return { id: x.id, kind: "versement", label: "Versement réalisé", amount: x.amount, date: dateLocal(x.executionDate), detail: "Versement enregistré", allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
   private plan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
   private valuation(x: AnyObject, kind: Operation["kind"]): InvestmentValuation {
-    const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: a.status === "PROJETEE" ? "rendement-estime" as const : "cours-demo" as const });
-    const installments = (x.installments ?? []).map((i: AnyObject) => ({ dueDate: dateLocal(i.dueDate), executionDate: dateLocal(i.executionDate), amount: i.amount, allocations: (i.allocations ?? []).map((a: AnyObject) => ({ isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? "Fonds euro", amount: a.amount ?? 0, shares: a.shares ?? 0, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: a.status === "PROJETEE" ? "rendement-estime" as const : "cours-demo" as const })) }));
-    return { operationId: x.operationId, valuationDate: dateLocal(x.valuationDate), invested: x.invested, value: x.value, gain: x.gain, gainRatePct: x.gainRatePct, installmentCount: installments.length, installments: kind === "dca" ? installments : [], allocations: (x.allocations ?? []).map(allocation), hasMissingPrices: (x.allocations ?? []).some((a: AnyObject) => a.status == null) };
+    const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
+    const installments = (x.installments ?? []).map((i: AnyObject) => ({
+      dueDate: dateLocal(i.dueDate), executionDate: dateLocal(i.executionDate), nature: installmentNature(i.nature), amount: i.amount,
+      allocations: (i.allocations ?? []).map((a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? "Fonds euro", amount: a.amount ?? 0, shares: a.shares ?? 0, value: a.value, gain: a.gain, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: valuationStatus(a.status), annualReturn: a.annualReturn, annualRate: a.annualRate })),
+    }));
+    const allocations: InvestmentValuation["allocations"] = (x.allocations ?? []).map(allocation);
+    return { operationId: x.operationId, valuationDate: dateLocal(x.valuationDate), invested: x.invested, value: x.value, gain: x.gain, gainRatePct: x.gainRatePct, installmentCount: installments.length, installments: kind === "dca" ? installments : [], allocations, hasMissingPrices: allocations.some((a) => a.status === "missing") || installments.some((i: InvestmentValuation["installments"][number]) => i.allocations.some((a) => a.status === "missing")) };
   }
   async compareOperation(_id: string, _input: ScenarioInput): Promise<InvestmentComparison> { throw new Error("Comparaison désactivée : elle n’est pas encore disponible dans l’API."); }
+}
+
+function valuationStatus(status?: string): "observed" | "projected" | "missing" {
+  if (status === "COURS") return "observed";
+  if (status === "PROJETEE" || status === "PROJECTED") return "projected";
+  return "missing";
+}
+
+function installmentNature(nature?: string): "observed" | "projected" | "mixed" | "not-yet-executed" | undefined {
+  if (nature === "OBSERVED") return "observed";
+  if (nature === "PROJECTED") return "projected";
+  if (nature === "MIXED") return "mixed";
+  if (nature === "NOT_YET_EXECUTED") return "not-yet-executed";
+  return undefined;
 }

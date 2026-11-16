@@ -44,21 +44,29 @@ export interface ValuedAllocation {
   observedDate?: string;
   value: number;
   gain: number;
-  status: "cours-demo" | "rendement-estime" | "cours-indisponible";
+  status: "observed" | "projected" | "missing";
+  annualReturns?: number[];
+  annualRates?: number[];
 }
 
 export interface InstallmentValuation {
   dueDate: string;
   executionDate: string;
+  nature?: "observed" | "projected" | "mixed" | "not-yet-executed";
   amount: number;
   allocations: {
+    instrumentKind: InstrumentKind;
     isin: string;
     name: string;
     amount: number;
     shares: number;
+    value?: number;
+    gain?: number;
     purchasePrice?: number;
     purchasePriceDate?: string;
     status: ValuedAllocation["status"];
+    annualReturn?: number;
+    annualRate?: number;
   }[];
 }
 

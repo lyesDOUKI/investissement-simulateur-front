@@ -31,20 +31,20 @@ const consoleLogResponse: InvestmentValuation = {
     instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World",
     invested: 300, shares: 0.096583, averagePurchasePrice: 3106.16,
     observedPrice: 3002.18, observedDate: "13/11/2026", value: 289.96,
-    gain: -10.04, status: "cours-demo",
+    gain: -10.04, status: "observed",
   }],
   installments: [
-    { dueDate: "10/09/2026", executionDate: "15/09/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031680, purchasePrice: 3156.53, purchasePriceDate: "15/09/2026", status: "cours-demo" }] },
-    { dueDate: "10/10/2026", executionDate: "14/10/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031594, purchasePrice: 3165.08, purchasePriceDate: "14/10/2026", status: "cours-demo" }] },
-    { dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.033309, purchasePrice: 3002.18, purchasePriceDate: "13/11/2026", status: "cours-demo" }] },
+    { dueDate: "10/09/2026", executionDate: "15/09/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031680, purchasePrice: 3156.53, purchasePriceDate: "15/09/2026", status: "observed" }] },
+    { dueDate: "10/10/2026", executionDate: "14/10/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031594, purchasePrice: 3165.08, purchasePriceDate: "14/10/2026", status: "observed" }] },
+    { dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.033309, purchasePrice: 3002.18, purchasePriceDate: "13/11/2026", status: "observed" }] },
   ],
 };
 
 const genericValuation: InvestmentValuation = {
   operationId: "", valuationDate: "", invested: 500, value: 512.4, gain: 12.4,
   gainRatePct: 2.48, installmentCount: 1, hasMissingPrices: false,
-  allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", invested: 500, shares: 0.1665, averagePurchasePrice: 3003, observedPrice: 3074.77, observedDate: "14/11/2026", value: 512.4, gain: 12.4, status: "cours-demo" }],
-  installments: [{ dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 500, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 500, shares: 0.1665, purchasePrice: 3003, purchasePriceDate: "13/11/2026", status: "cours-demo" }] }],
+  allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", invested: 500, shares: 0.1665, averagePurchasePrice: 3003, observedPrice: 3074.77, observedDate: "14/11/2026", value: 512.4, gain: 12.4, status: "observed" }],
+  installments: [{ dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 500, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 500, shares: 0.1665, purchasePrice: 3003, purchasePriceDate: "13/11/2026", status: "observed" }] }],
 };
 
 const genericOneOffValuation: InvestmentValuation = {
@@ -70,16 +70,16 @@ const demoAlternative: InvestmentValuation = {
   gainRatePct: 6.7,
   installmentCount: 4,
   installments: [
-    { dueDate: "10/08/2026", executionDate: "13/08/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.0331, purchasePrice: 3021.15, purchasePriceDate: "13/08/2026", status: "cours-demo" }] },
-    { dueDate: "10/09/2026", executionDate: "15/09/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.03168, purchasePrice: 3156.53, purchasePriceDate: "15/09/2026", status: "cours-demo" }] },
-    { dueDate: "10/10/2026", executionDate: "14/10/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031594, purchasePrice: 3165.08, purchasePriceDate: "14/10/2026", status: "cours-demo" }] },
-    { dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 100, allocations: [{ isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.033309, purchasePrice: 3002.18, purchasePriceDate: "13/11/2026", status: "cours-demo" }] },
+    { dueDate: "10/08/2026", executionDate: "13/08/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.0331, purchasePrice: 3021.15, purchasePriceDate: "13/08/2026", status: "observed" }] },
+    { dueDate: "10/09/2026", executionDate: "15/09/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.03168, purchasePrice: 3156.53, purchasePriceDate: "15/09/2026", status: "observed" }] },
+    { dueDate: "10/10/2026", executionDate: "14/10/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.031594, purchasePrice: 3165.08, purchasePriceDate: "14/10/2026", status: "observed" }] },
+    { dueDate: "10/11/2026", executionDate: "13/11/2026", amount: 100, allocations: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", amount: 100, shares: 0.033309, purchasePrice: 3002.18, purchasePriceDate: "13/11/2026", status: "observed" }] },
   ],
   allocations: [{
     instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World",
     invested: 400, shares: 0.1387, averagePurchasePrice: 2883.92,
     observedPrice: 3074.77, observedDate: "14/11/2026", value: 426.8,
-    gain: 26.8, status: "cours-demo",
+    gain: 26.8, status: "observed",
   }],
 };
 
@@ -95,7 +95,7 @@ const genericAlternative: InvestmentValuation = {
     instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World",
     invested: 400, shares: 0.1387, averagePurchasePrice: 2883.92,
     observedPrice: 3074.77, observedDate: "14/11/2026", value: 426.8,
-    gain: 26.8, status: "cours-demo",
+    gain: 26.8, status: "observed",
   }],
 };
 

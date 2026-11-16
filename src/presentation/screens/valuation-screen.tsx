@@ -11,6 +11,9 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
   operation: Operation; date: string; annualReturnPct: string; result: InvestmentValuation | null; error: string; loading: boolean; compareEnabled: boolean;
   onDateChange: (value: string) => void; onAnnualReturnChange: (value: string) => void; onValue: () => void; onCompare: () => void; onDetails: () => void;
 }) {
+  const hasProjection = result?.allocations.some((allocation) => allocation.status === "projected")
+    || result?.installments.some((installment) => installment.nature === "projected" || installment.nature === "mixed" || installment.allocations.some((allocation) => allocation.status === "projected"));
+
   return <>
     <PageHeading eyebrow="Résultat de valorisation" title={operation.kind === "dca" ? "Valeur de votre plan" : "Valeur de votre versement"} subtitle="Choisissez une date, puis consultez la valeur estimée de vos achats." />
     <Card style={styles.source}>
@@ -40,6 +43,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
         {result.assumptionPct !== undefined ? <Text style={styles.heroLabel}>Hypothèse transmise : {result.assumptionPct} % / an</Text> : null}
       </Card>
       <Text style={styles.resultExplanation}>Les achats sont ceux enregistrés à leurs dates d’exécution. La valeur affichée correspond à la date choisie.</Text>
+      {hasProjection ? <Card style={styles.projectionNote}><Text style={styles.projectionTitle}>Cette valorisation inclut des projections</Text><Text style={styles.warningText}>Quand aucun cours observé n’est disponible à la date demandée, le service utilise une hypothèse annuelle. Le détail par support indique les cours observés et les hypothèses appliquées.</Text></Card> : null}
       <Pressable onPress={onDetails} accessibilityRole="button" accessibilityLabel="Ouvrir le détail des achats et des échéances" style={styles.detailsLink}>
         <View style={styles.detailsText}><Text style={styles.detailsTitle}>{operation.kind === "dca" ? "Voir le détail des échéances" : "Voir le détail du versement"}</Text><Text style={styles.meta}>{result.allocations.length} support{result.allocations.length === 1 ? "" : "s"}{operation.kind === "dca" ? ` · ${result.installmentCount} échéances` : " · parts et cours d’achat"}</Text></View>
         <Text style={styles.chevron}>›</Text>
@@ -57,5 +61,6 @@ const styles = StyleSheet.create({
   resultExplanation: { color: p.muted, fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 10 },
   detailsLink: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, padding: 15, backgroundColor: p.paper, borderColor: p.line, borderWidth: 1, borderRadius: 18, marginBottom: 10 }, detailsText: { flex: 1, gap: 4 }, detailsTitle: { color: p.forestLight, fontSize: 14, fontWeight: "700" }, chevron: { color: p.forestLight, fontSize: 26, fontWeight: "500" },
   warning: { backgroundColor: p.warning, marginTop: 6 }, warningText: { color: p.warningText, fontSize: 12, lineHeight: 18 },
+  projectionNote: { backgroundColor: p.warning, marginTop: 6 }, projectionTitle: { color: p.warningText, fontSize: 13, fontWeight: "700" },
   error: { color: p.red, fontSize: 13, lineHeight: 18 }, disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 4, marginBottom: 8 },
 });
