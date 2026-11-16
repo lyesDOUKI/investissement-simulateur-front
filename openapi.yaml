@@ -705,6 +705,11 @@ components:
         isin:
           type: string
           description: ISIN pour une unité de compte
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type: string
           description: Nom du support
@@ -823,6 +828,11 @@ components:
         isin:
           type: string
           description: ISIN pour une unité de compte
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type: string
           description: Nom du support
@@ -914,6 +924,11 @@ components:
       properties:
         isin:
           type: string
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         annualReturn:
           type: number
     ComparisonAllocationParameter:
@@ -926,9 +941,18 @@ components:
           - UNIT_LINKED
           - EURO_FUND
         isin:
-          type: string
+          type:
+          - string
+          - "null"
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
-          type: string
+          type:
+          - string
+          - "null"
         amount:
           type: number
     ComparisonDcaParameters:
@@ -1053,6 +1077,11 @@ components:
           type:
           - string
           - "null"
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type:
           - string
@@ -1156,6 +1185,11 @@ components:
           type:
           - string
           - "null"
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type:
           - string
@@ -1340,6 +1374,11 @@ components:
           - string
           - "null"
           description: ISIN de l'unité de compte
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type: string
           description: "Nom connu du support, ou son identifiant si aucun nom n'est\
@@ -1395,6 +1434,11 @@ components:
           - string
           - "null"
           description: ISIN de l'unité de compte
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         name:
           type: string
           description: "Nom connu du support, ou son identifiant si aucun nom n'est\
@@ -1546,6 +1590,11 @@ components:
           type: string
           description: ISIN pour une unité de compte
           example: IE00B4L5Y983
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         euroFundName:
           type: string
           description: Nom du fonds euro
@@ -1645,6 +1694,11 @@ components:
           type: string
           description: ISIN pour une unité de compte
           example: IE00B4L5Y983
+        symbol:
+          type:
+          - string
+          - "null"
+          description: Symbole de marché associé à l'ISIN dans price_instrument
         euroFundName:
           type: string
           description: Nom du fonds euro
