@@ -10,13 +10,14 @@ import { InvestmentFormScreen } from "@/presentation/screens/investment-form-scr
 import { ComparisonResultScreen } from "@/presentation/screens/comparison-result-screen";
 import { SimulationScreen } from "@/presentation/screens/simulation-screen";
 import { ValuationResultScreen } from "@/presentation/screens/valuation-screen";
+import { ValuationDetailsScreen } from "@/presentation/screens/valuation-details-screen";
 import { ScenarioFormScreen } from "@/presentation/screens/scenario-screen";
 import { LoginScreen } from "@/presentation/screens/login-screen";
 import { AccountScreen } from "@/presentation/screens/account-screen";
 import { palette as p } from "@/presentation/theme";
 
 type MainPage="dashboard"|"history"|"simulation";
-type Page=MainPage|"form"|"valuation-result"|"scenario-form"|"comparison-result"|"account"|"login"|"register";
+type Page=MainPage|"form"|"valuation-result"|"valuation-details"|"scenario-form"|"comparison-result"|"account"|"login"|"register";
 const today=()=>new Date().toLocaleDateString("fr-FR");
 const amountValue=(input:string)=>Number(input.replace(",", "."))||0;
 let nextLineId=0;
@@ -68,14 +69,15 @@ export default function HomeScreen(){
  const labels:Record<MainPage,string>={dashboard:"Accueil",history:"Journal",simulation:"Simuler"};
  return <SafeAreaView style={styles.safe} edges={["top","bottom"]}><StatusBar barStyle="light-content"/>
   {account&&!main&&page!=="register"?<View style={styles.context}><Pressable onPress={goBack} hitSlop={10} accessibilityRole="button" accessibilityLabel="Revenir à l’écran précédent" style={styles.back}><Text style={styles.backText}>‹ Retour</Text></Pressable><Text style={styles.brand}>ALTO<Text style={{color:p.forestLight}}>.</Text></Text><View style={{width:80}}/></View>:null}
-  <ScrollView style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation-result"||page==="scenario-form"||page==="simulation"||page==="account")&&styles.narrow,(page==="login"||page==="register")&&styles.authContent]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+  <ScrollView style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation-result"||page==="valuation-details"||page==="scenario-form"||page==="simulation"||page==="account")&&styles.narrow,(page==="login"||page==="register")&&styles.authContent]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
    {!account ? <LoginScreen error={authError} loading={authLoading} onSubmit={()=>void signIn()}/> : !portfolio?<View style={styles.initialLoading}><ActivityIndicator color={p.forestLight}/><Text style={styles.loadingText}>Chargement de votre espace…</Text></View>:<>
     {page==="dashboard"?<DashboardScreen portfolio={portfolio} securities={securities} account={account} onAccount={()=>navigate("account")} onAddVersement={()=>startForm("versement")} onAddDca={()=>startForm("dca")} onHistory={()=>goTo("history")} onValue={startValue}/>:null}
     {page==="simulation"?<SimulationScreen operations={portfolio.operations} onValue={startValue} onCompare={startScenario} compareEnabled={flags.comparison} onJournal={()=>goTo("history")}/>:null}
     {page==="history"?<HistoryScreen operations={portfolio.operations} securities={securities} onValue={startValue} onCompare={startScenario} compareEnabled={flags.comparison} onVersement={()=>startForm("versement")} onDca={()=>startForm("dca")}/>:null}
     {page==="form"?<InvestmentFormScreen kind={formKind} total={total} lines={lines} securities={securities} date={date} executionDay={executionDay} delayBusinessDays={delay} annualReturnPct={annualReturnPct} loading={loading} error={error}
       onTotalChange={setTotal} onLineChange={updateLine} onAddLine={()=>setLines((current)=>[...current,newLine()])} onRemoveLine={(id)=>setLines((current)=>current.filter((line)=>line.id!==id))} onDateChange={setDate} onExecutionDayChange={setExecutionDay} onDelayChange={setDelay} onAnnualReturnChange={setAnnualReturnPct} onSubmit={()=>void submitOperation()}/>:null}
-    {page==="valuation-result"&&selected?<ValuationResultScreen operation={selected} date={date} annualReturnPct={annualReturnPct} result={valuation} error={error} loading={loading} compareEnabled={flags.comparison} onDateChange={(v)=>{setDate(v);setValuation(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setValuation(null);}} onValue={()=>void valueAtDate()} onCompare={()=>startScenario(selected)}/>:null}
+    {page==="valuation-result"&&selected?<ValuationResultScreen operation={selected} date={date} annualReturnPct={annualReturnPct} result={valuation} error={error} loading={loading} compareEnabled={flags.comparison} onDateChange={(v)=>{setDate(v);setValuation(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setValuation(null);}} onValue={()=>void valueAtDate()} onCompare={()=>startScenario(selected)} onDetails={()=>navigate("valuation-details")}/>:null}
+    {page==="valuation-details"&&selected&&valuation?<ValuationDetailsScreen operation={selected} result={valuation}/>:null}
     {page==="scenario-form"&&selected?<ScenarioFormScreen operation={selected} operations={portfolio.operations} startDate={scenarioStartDate} date={date} total={total} executionDay={executionDay} delayBusinessDays={delay} lines={lines} securities={securities} annualReturnPct={annualReturnPct} error={error} loading={loading}
       onStartDateChange={(v)=>{setScenarioStartDate(v);setComparison(null);setScenarioRequest(null);}} onUseSavedPlan={useSavedPlan} onDateChange={(v)=>{setDate(v);setComparison(null);setScenarioRequest(null);}} onExecutionDayChange={(v)=>{setExecutionDay(v);setComparison(null);setScenarioRequest(null);}} onDelayChange={(v)=>{setDelay(v);setComparison(null);setScenarioRequest(null);}} onTotalChange={(v)=>{setTotal(v);setComparison(null);setScenarioRequest(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setComparison(null);setScenarioRequest(null);}} onLineChange={(id,field,value)=>{setComparison(null);setScenarioRequest(null);updateLine(id,field,value);}} onAddLine={()=>{setComparison(null);setScenarioRequest(null);setLines((current)=>[...current,newLine()]);}} onRemoveLine={(id)=>{setComparison(null);setScenarioRequest(null);setLines((current)=>current.filter((line)=>line.id!==id));}} onCompare={()=>void compare()}/>:null}
     {page==="comparison-result"&&comparison&&selected&&scenarioRequest?<ComparisonResultScreen operation={selected} scenario={scenarioRequest} result={comparison} onAdjust={goBack}/>:null}
