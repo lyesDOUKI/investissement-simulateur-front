@@ -155,12 +155,78 @@ export class FakePortfolioRepository implements PortfolioRepository {
     const alternative = operationId === demoPlan.id
       ? demoAlternative
       : operation?.kind === "versement" ? genericOneOffAlternative : genericAlternative;
+    const fallbackOperation = operation ?? demoPlan;
     return {
-      original: { ...original, valuationDate: input.valuationDate },
-      alternative: { ...alternative, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct },
+      valuationDate: input.valuationDate,
+      valuationStatus: "complete",
+      original: fakeComparisonScenario(fallbackOperation, original, fallbackOperation.allocations, fallbackOperation.date, fallbackOperation.amount, fallbackOperation.executionDay, fallbackOperation.delayBusinessDays),
+      alternative: fakeComparisonScenario(fallbackOperation, { ...alternative, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct }, input.allocations, input.startDate, input.amount, input.executionDay, input.delayBusinessDays, input.annualReturnPct, null),
       difference: operationId === demoPlan.id
-        ? { invested: 100, value: 136.84, gain: 36.84 }
-        : { invested: -100, value: -85.6, gain: 14.4 },
+        ? { invested: 100, value: 136.84, gain: 36.84, gainRatePercentagePoints: 10.05 }
+        : { invested: -100, value: -85.6, gain: 14.4, gainRatePercentagePoints: 4.22 },
     };
   }
+}
+
+function fakeComparisonScenario(operation: Operation, valuation: InvestmentValuation, allocations: Operation["allocations"], startDate: string, amount: number, executionDay?: number, delayBusinessDays?: number, annualReturnPct = 5, operationId: string | null = operation.id) {
+  return {
+    operationId,
+    parameters: {
+      date: operation.kind === "versement" ? startDate : undefined,
+      configuredAt: operation.kind === "dca" ? startDate : undefined,
+      amount: operation.kind === "versement" ? amount : undefined,
+      monthlyAmount: operation.kind === "dca" ? amount : undefined,
+      executionDay,
+      delayBusinessDays,
+      allocations: allocations.map((line) => ({ instrumentKind: line.instrumentKind, isin: line.instrumentKind === "uc" ? line.isin : null, name: line.name ?? null, amount: line.amount })),
+      projectionAssumptions: allocations.filter((line) => line.instrumentKind === "uc").map((line) => ({ isin: line.isin, annualReturn: annualReturnPct / 100 })),
+      euroFundAssumptions: allocations.filter((line) => line.instrumentKind === "fonds-euro").map((line) => ({ name: line.name ?? "Fonds euro", annualRate: (line.annualReturnPct ?? 0) / 100 })),
+    },
+    valuation: {
+      valuationDate: valuation.valuationDate,
+      invested: valuation.invested,
+      value: valuation.value,
+      gain: valuation.gain,
+      gainRatePct: valuation.gainRatePct,
+      allocations: valuation.allocations.map((allocation) => ({
+        instrumentKind: allocation.instrumentKind,
+        isin: allocation.instrumentKind === "uc" ? allocation.isin : null,
+        name: allocation.name,
+        invested: allocation.invested,
+        shares: allocation.shares,
+        averagePurchasePrice: allocation.averagePurchasePrice ?? null,
+        observedPrice: allocation.observedPrice ?? null,
+        observedDate: allocation.observedDate ?? null,
+        value: allocation.value,
+        gain: allocation.gain,
+        status: allocation.status === "observed" ? "observed" as const : allocation.status === "projected" ? "projected" as const : "missing" as const,
+        purchaseStatus: allocation.status === "observed" ? "observed" as const : allocation.status === "projected" ? "projected" as const : "missing" as const,
+        annualReturns: [],
+        annualRates: [],
+      })),
+      installments: valuation.installments.map((installment) => ({
+        dueDate: installment.dueDate,
+        executionDate: installment.executionDate,
+        nature: "observed" as const,
+        amount: installment.amount,
+        allocations: installment.allocations.map((line) => ({
+          instrumentKind: line.instrumentKind,
+          isin: line.instrumentKind === "uc" ? line.isin : null,
+          name: line.name,
+          amount: line.amount,
+          shares: line.shares,
+          purchasePrice: line.purchasePrice ?? null,
+          purchasePriceDate: line.purchasePriceDate ?? null,
+          observedPrice: null,
+          observedDate: null,
+          value: line.value ?? null,
+          gain: line.gain ?? null,
+          status: line.status === "observed" ? "observed" as const : line.status === "projected" ? "projected" as const : "missing" as const,
+          purchaseStatus: line.status === "observed" ? "observed" as const : line.status === "projected" ? "projected" as const : "missing" as const,
+          annualReturns: [],
+          annualRates: [],
+        })),
+      })),
+    },
+  };
 }

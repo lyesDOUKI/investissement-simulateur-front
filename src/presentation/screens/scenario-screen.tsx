@@ -74,7 +74,7 @@ export function ScenarioFormScreen(props: {
         <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
         <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" />
       </> : null}
-      <TextField label="Taux annuel (hypothèse)" value={props.annualReturnPct} onChangeText={props.onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Transmis au service pour une projection future." />
+      <TextField label="Hypothèse annuelle commune" value={props.annualReturnPct} onChangeText={props.onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Appliquée par le service aux mêmes ISIN dans A et B lorsque leur valeur doit être projetée." />
     </Card>
 
     <SectionTitle title="3 · Allocation du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
@@ -93,7 +93,7 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{securities.map((security) => <Pill key={security.isin} label={security.shortName} onPress={() => update(line, "isin", security.isin)} />)}</View>
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(value) => update(line, "name", value)} placeholder="Fonds euro du contrat" />
-        <TextField label="Rendement annuel (hypothèse)" value={String(line.annualReturnPct ?? "")} onChangeText={(value) => update(line, "annualReturnPct", value)} keyboardType="decimal-pad" suffix="%" />
+        <TextField label="Taux annuel du fonds euro" value={String(line.annualReturnPct ?? "")} onChangeText={(value) => update(line, "annualReturnPct", value)} keyboardType="decimal-pad" suffix="%" helper="Hypothèse transmise au service si ce support doit être projeté." />
       </>}
       <TextField label="Montant affecté" value={String(line.amount || "")} onChangeText={(value) => update(line, "amount", value)} keyboardType="decimal-pad" suffix="€" />
     </Card>)}

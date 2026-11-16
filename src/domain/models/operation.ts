@@ -147,12 +147,93 @@ export interface ScenarioInput {
 }
 
 export interface InvestmentComparison {
-  original: InvestmentValuation;
-  alternative: InvestmentValuation;
+  valuationDate: string;
+  valuationStatus: "complete" | "partial";
+  original: ComparisonScenario;
+  alternative: ComparisonScenario;
   /** Difference returned by the backend: scenario B relative to reference A. */
   difference: {
     invested: number;
-    value: number;
-    gain: number;
+    value: number | null;
+    gain: number | null;
+    gainRatePercentagePoints: number | null;
   };
+}
+
+export interface ComparisonScenario {
+  operationId: string | null;
+  parameters: ComparisonParameters;
+  valuation: ComparisonValuation;
+}
+
+export interface ComparisonParameters {
+  date?: string;
+  configuredAt?: string;
+  amount?: number;
+  monthlyAmount?: number;
+  executionDay?: number;
+  delayBusinessDays?: number;
+  allocations: {
+    instrumentKind: InstrumentKind;
+    isin: string | null;
+    name: string | null;
+    amount: number;
+  }[];
+  projectionAssumptions: { isin: string; annualReturn: number }[];
+  euroFundAssumptions: { name: string; annualRate: number }[];
+}
+
+export type ComparisonDataStatus = "observed" | "projected" | "missing" | "not-executed";
+
+export interface ComparisonValuation {
+  valuationDate: string;
+  invested: number;
+  value: number | null;
+  gain: number | null;
+  gainRatePct: number | null;
+  allocations: ComparisonValuedAllocation[];
+  installments: ComparisonInstallment[];
+}
+
+export interface ComparisonValuedAllocation {
+  instrumentKind: InstrumentKind;
+  isin: string | null;
+  name: string | null;
+  invested: number;
+  shares: number | null;
+  averagePurchasePrice: number | null;
+  observedPrice: number | null;
+  observedDate: string | null;
+  value: number | null;
+  gain: number | null;
+  status: ComparisonDataStatus;
+  purchaseStatus: ComparisonDataStatus;
+  annualReturns: number[];
+  annualRates: number[];
+}
+
+export interface ComparisonInstallment {
+  dueDate: string;
+  executionDate: string;
+  nature: "observed" | "projected" | "mixed" | "partial" | "not-yet-executed";
+  amount: number;
+  allocations: ComparisonInstallmentAllocation[];
+}
+
+export interface ComparisonInstallmentAllocation {
+  instrumentKind: InstrumentKind;
+  isin: string | null;
+  name: string | null;
+  amount: number;
+  shares: number | null;
+  purchasePrice: number | null;
+  purchasePriceDate: string | null;
+  observedPrice: number | null;
+  observedDate: string | null;
+  value: number | null;
+  gain: number | null;
+  status: ComparisonDataStatus;
+  purchaseStatus: ComparisonDataStatus;
+  annualReturns: number[];
+  annualRates: number[];
 }

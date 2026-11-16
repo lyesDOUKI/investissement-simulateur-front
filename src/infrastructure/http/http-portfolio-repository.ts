@@ -103,7 +103,121 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const allocations: InvestmentValuation["allocations"] = (x.allocations ?? []).map(allocation);
     return { operationId: x.operationId, valuationDate: dateLocal(x.valuationDate), invested: x.invested, value: x.value, gain: x.gain, gainRatePct: x.gainRatePct, installmentCount: installments.length, installments: kind === "dca" ? installments : [], allocations, hasMissingPrices: allocations.some((a) => a.status === "missing") || installments.some((i: InvestmentValuation["installments"][number]) => i.allocations.some((a) => a.status === "missing")) };
   }
-  async compareOperation(_id: string, _input: ScenarioInput): Promise<InvestmentComparison> { throw new Error("Comparaison désactivée : elle n’est pas encore disponible dans l’API."); }
+  async compareOperation(id: string, input: ScenarioInput): Promise<InvestmentComparison> {
+    const operation = this.operations.get(id) ?? await this.getById(id);
+    const allocations = input.allocations.map((allocation) => allocation.instrumentKind === "uc"
+      ? { instrumentKind: "UNIT_LINKED", isin: allocation.isin, amount: allocation.amount }
+      : { instrumentKind: "EURO_FUND", name: allocation.name ?? "Fonds euro", amount: allocation.amount });
+    const projectionAssumptions = [...new Set([
+      ...operation.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
+      ...input.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
+    ])].map((isin) => ({ isin, annualReturn: (input.annualReturnPct ?? 5) / 100 }));
+    const euroFundNames = [...new Set([
+      ...operation.allocations.filter((allocation) => allocation.instrumentKind === "fonds-euro").map((allocation) => allocation.name ?? "Fonds euro"),
+      ...input.allocations.filter((allocation) => allocation.instrumentKind === "fonds-euro").map((allocation) => allocation.name ?? "Fonds euro"),
+    ])];
+    const euroFundAssumptions = euroFundNames.map((name) => {
+      const matchingAlternative = input.allocations.find((allocation) => allocation.instrumentKind === "fonds-euro" && (allocation.name ?? "Fonds euro") === name);
+      const matchingReference = operation.allocations.find((allocation) => allocation.instrumentKind === "fonds-euro" && (allocation.name ?? "Fonds euro") === name);
+      return { name, annualRate: ((matchingAlternative?.annualReturnPct ?? matchingReference?.annualReturnPct ?? 0) / 100) };
+    });
+    const alternative = operation.kind === "dca"
+      ? { date: dateIso(input.startDate), amount: input.amount, executionDay: input.executionDay, delayBusinessDays: input.delayBusinessDays, allocations }
+      : { date: dateIso(input.startDate), amount: input.amount, allocations };
+    const request = {
+      valuationDate: dateIso(input.valuationDate),
+      alternative,
+      projectionAssumptions,
+      euroFundAssumptions,
+    };
+    const path = operation.kind === "dca" ? `/dca-investments/${id}/comparisons` : `/one-time-payments/${id}/comparisons`;
+    const response = await this.request(path, { method: "POST", body: JSON.stringify(request) });
+    return this.comparison(response);
+  }
+
+  private comparison(x: AnyObject): InvestmentComparison {
+    return {
+      valuationDate: dateLocal(x.valuationDate),
+      valuationStatus: x.valuationStatus === "COMPLETE" ? "complete" : "partial",
+      original: this.comparisonScenario(x.original),
+      alternative: this.comparisonScenario(x.alternative),
+      difference: {
+        invested: x.difference?.invested ?? 0,
+        value: x.difference?.value ?? null,
+        gain: x.difference?.gain ?? null,
+        gainRatePercentagePoints: x.difference?.gainRatePercentagePoints ?? null,
+      },
+    };
+  }
+
+  private comparisonScenario(x: AnyObject) {
+    const parameters = x.parameters ?? {};
+    return {
+      operationId: x.operationId ?? null,
+      parameters: {
+        date: parameters.date ? dateLocal(parameters.date) : undefined,
+        configuredAt: parameters.configuredAt ? dateLocal(parameters.configuredAt) : undefined,
+        amount: parameters.amount,
+        monthlyAmount: parameters.monthlyAmount,
+        executionDay: parameters.executionDay,
+        delayBusinessDays: parameters.delayBusinessDays,
+        allocations: (parameters.allocations ?? []).map((allocation: AnyObject) => ({
+          instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
+          isin: allocation.isin ?? null,
+          name: allocation.name ?? null,
+          amount: allocation.amount ?? 0,
+        })),
+        projectionAssumptions: (parameters.projectionAssumptions ?? []).map((assumption: AnyObject) => ({ isin: assumption.isin, annualReturn: assumption.annualReturn })),
+        euroFundAssumptions: (parameters.euroFundAssumptions ?? []).map((assumption: AnyObject) => ({ name: assumption.name, annualRate: assumption.annualRate })),
+      },
+      valuation: {
+        valuationDate: dateLocal(x.valuation?.valuationDate),
+        invested: x.valuation?.invested ?? 0,
+        value: x.valuation?.value ?? null,
+        gain: x.valuation?.gain ?? null,
+        gainRatePct: x.valuation?.gainRatePct ?? null,
+        allocations: (x.valuation?.allocations ?? []).map((allocation: AnyObject) => ({
+          instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
+          isin: allocation.isin ?? null,
+          name: allocation.name ?? null,
+          invested: allocation.invested ?? 0,
+          shares: allocation.shares ?? null,
+          averagePurchasePrice: allocation.averagePurchasePrice ?? null,
+          observedPrice: allocation.observedPrice ?? null,
+          observedDate: allocation.observedDate ? dateLocal(allocation.observedDate) : null,
+          value: allocation.value ?? null,
+          gain: allocation.gain ?? null,
+          status: comparisonDataStatus(allocation.status),
+          purchaseStatus: comparisonDataStatus(allocation.purchaseStatus),
+          annualReturns: allocation.annualReturns ?? [],
+          annualRates: allocation.annualRates ?? [],
+        })),
+        installments: (x.valuation?.installments ?? []).map((installment: AnyObject) => ({
+          dueDate: dateLocal(installment.dueDate),
+          executionDate: dateLocal(installment.executionDate),
+          nature: comparisonInstallmentNature(installment.nature),
+          amount: installment.amount ?? 0,
+          allocations: (installment.allocations ?? []).map((allocation: AnyObject) => ({
+            instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
+            isin: allocation.isin ?? null,
+            name: allocation.name ?? null,
+            amount: allocation.amount ?? 0,
+            shares: allocation.shares ?? null,
+            purchasePrice: allocation.purchasePrice ?? null,
+            purchasePriceDate: allocation.purchasePriceDate ? dateLocal(allocation.purchasePriceDate) : null,
+            observedPrice: allocation.observedPrice ?? null,
+            observedDate: allocation.observedDate ? dateLocal(allocation.observedDate) : null,
+            value: allocation.value ?? null,
+            gain: allocation.gain ?? null,
+            status: comparisonDataStatus(allocation.status),
+            purchaseStatus: comparisonDataStatus(allocation.purchaseStatus),
+            annualReturns: allocation.annualReturns ?? [],
+            annualRates: allocation.annualRates ?? [],
+          })),
+        })),
+      },
+    };
+  }
 }
 
 function valuationStatus(status?: string): "observed" | "projected" | "missing" {
@@ -118,4 +232,19 @@ function installmentNature(nature?: string): "observed" | "projected" | "mixed" 
   if (nature === "MIXED") return "mixed";
   if (nature === "NOT_YET_EXECUTED") return "not-yet-executed";
   return undefined;
+}
+
+function comparisonDataStatus(status?: string): "observed" | "projected" | "missing" | "not-executed" {
+  if (status === "COURS") return "observed";
+  if (status === "PROJETEE") return "projected";
+  if (status === "NON_EXECUTEE") return "not-executed";
+  return "missing";
+}
+
+function comparisonInstallmentNature(nature?: string): "observed" | "projected" | "mixed" | "partial" | "not-yet-executed" {
+  if (nature === "OBSERVED") return "observed";
+  if (nature === "PROJECTED") return "projected";
+  if (nature === "MIXED") return "mixed";
+  if (nature === "NOT_YET_EXECUTED") return "not-yet-executed";
+  return "partial";
 }

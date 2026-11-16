@@ -13,7 +13,7 @@ import { DevTokenClient } from "./http/dev-token-client";
 
 export const flags = {
   accountAuth: process.env.EXPO_PUBLIC_FEATURE_ACCOUNT_AUTH === "true",
-  comparison: process.env.EXPO_PUBLIC_FEATURE_COMPARISON === "true",
+  comparison: process.env.EXPO_PUBLIC_FEATURE_COMPARISON !== "false",
   httpApi: process.env.EXPO_PUBLIC_USE_HTTP_API !== "false",
 };
 export const devTokenClient = new DevTokenClient();
