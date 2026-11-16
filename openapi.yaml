@@ -132,6 +132,72 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ApiProblem"
+  /one-time-payments/{paymentId}/comparisons:
+    post:
+      tags:
+      - Versements uniques
+      summary: Comparer un versement avec une hypothèse alternative
+      description: Compare sans effet de bord le versement enregistré du client authentifié
+        avec un scénario alternatif. La date de valorisation et les hypothèses sont
+        communes aux deux scénarios. Les écarts sont calculés comme alternative moins
+        original ; les valeurs et gains globaux sont null si une valorisation est
+        partielle.
+      operationId: compareOneTimePayment
+      parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareOneTimePaymentRequest"
+        required: true
+      responses:
+        "200":
+          description: "Comparaison calculée, éventuellement partielle"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvestmentComparisonResponse"
+        "400":
+          description: "Date, paramètres, allocations ou montants invalides au format\
+            \ RFC 9457"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "401":
+          description: Bearer absent ou invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "403":
+          description: Le versement de référence appartient à un autre client au format
+            RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Versement de référence introuvable au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: "La date cible, les hypothèses ou une règle métier sont incohé\
+            rentes au format RFC 9457"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+      security:
+      - bearerAuth: []
   /dca-investments:
     get:
       tags:
@@ -257,6 +323,73 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ApiProblem"
+  /dca-investments/{dcaInvestmentId}/comparisons:
+    post:
+      tags:
+      - Plans DCA
+      summary: Comparer un plan DCA avec une hypothèse alternative
+      description: "Compare sans effet de bord le plan enregistré du client authentifié\
+        \ avec une configuration DCA alternative. Le domaine calcule les échéances,\
+        \ leurs exécutions et leurs valorisations à une date cible commune. Les é\
+        carts sont calculés comme alternative moins original ; les valeurs et gains\
+        \ globaux sont null si une valorisation est partielle."
+      operationId: compareDcaInvestment
+      parameters:
+      - name: dcaInvestmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompareDcaInvestmentRequest"
+        required: true
+      responses:
+        "200":
+          description: "Comparaison calculée avec le détail de chaque échéance, é\
+            ventuellement partielle"
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/InvestmentComparisonResponse"
+        "400":
+          description: "Date, paramètres, allocations ou montants invalides au format\
+            \ RFC 9457"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "401":
+          description: Bearer absent ou invalide au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "403":
+          description: Le plan DCA de référence appartient à un autre client au format
+            RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "404":
+          description: Plan DCA de référence introuvable au format RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "422":
+          description: "La date cible, les hypothèses ou une règle métier sont incohé\
+            rentes au format RFC 9457"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+      security:
+      - bearerAuth: []
   /portfolio/summary:
     get:
       tags:
@@ -551,6 +684,7 @@ components:
           - OBSERVED
           - PROJECTED
           - MIXED
+          - PARTIAL
           - NOT_YET_EXECUTED
         amount:
           type: number
@@ -731,6 +865,394 @@ components:
           description: Taux annuels de fonds euro utilisés pour les lignes projetées
           items:
             type: number
+    AlternativeOneTimePayment:
+      type: object
+      description: Paramètres hypothétiques du versement alternatif
+      properties:
+        amount:
+          type: number
+          description: Montant total du versement
+          example: 1500.0
+        date:
+          type: string
+          format: date
+          description: Date d'exécution du versement alternatif
+          example: 2026-08-08
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationRequest"
+          minItems: 1
+      required:
+      - allocations
+      - amount
+      - date
+    CompareOneTimePaymentRequest:
+      type: object
+      description: Comparaison sans effet de bord d'un versement avec une hypothèse
+        alternative
+      properties:
+        valuationDate:
+          type: string
+          format: date
+          description: Date commune de valorisation pour les deux scénarios
+          example: 2026-12-31
+        alternative:
+          $ref: "#/components/schemas/AlternativeOneTimePayment"
+        projectionAssumptions:
+          type: array
+          description: Hypothèses annuelles par ISIN. 0.05 représente 5 %.
+          items:
+            $ref: "#/components/schemas/ComparisonProjectionAssumption"
+        euroFundAssumptions:
+          type: array
+          description: Hypothèses annuelles par fonds euro. 0.03 représente 3 %.
+          items:
+            $ref: "#/components/schemas/ComparisonEuroFundAssumption"
+      required:
+      - alternative
+      - euroFundAssumptions
+      - projectionAssumptions
+      - valuationDate
+    ComparisonEuroFundAssumption:
+      type: object
+      description: Hypothèse de taux annualisé fournie pour un fonds euro
+      properties:
+        name:
+          type: string
+        annualRate:
+          type: number
+    ComparisonProjectionAssumption:
+      type: object
+      description: Hypothèse de rendement annualisée fournie pour un ISIN
+      properties:
+        isin:
+          type: string
+        annualReturn:
+          type: number
+    ComparisonAllocationParameter:
+      type: object
+      description: Montant affecté à un support dans le scénario
+      properties:
+        instrumentKind:
+          type: string
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type: string
+        name:
+          type: string
+        amount:
+          type: number
+    ComparisonDcaParameters:
+      allOf:
+      - $ref: "#/components/schemas/InvestmentComparisonParameters"
+      - type: object
+        properties:
+          configuredAt:
+            type: string
+            format: date
+          monthlyAmount:
+            type: number
+          paymentDay:
+            type: integer
+            format: int32
+          businessDayDelay:
+            type: integer
+            format: int32
+          allocations:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonAllocationParameter"
+          projectionAssumptions:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonProjectionAssumption"
+          euroFundAssumptions:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonEuroFundAssumption"
+      description: Paramètres utilisés pour un plan DCA
+    ComparisonOneTimePaymentParameters:
+      allOf:
+      - $ref: "#/components/schemas/InvestmentComparisonParameters"
+      - type: object
+        properties:
+          date:
+            type: string
+            format: date
+          amount:
+            type: number
+          allocations:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonAllocationParameter"
+          projectionAssumptions:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonProjectionAssumption"
+          euroFundAssumptions:
+            type: array
+            items:
+              $ref: "#/components/schemas/ComparisonEuroFundAssumption"
+      description: Paramètres utilisés pour un versement ponctuel
+    InvestmentComparisonParameters:
+      description: "Configuration du scénario, avec les hypothèses communes reçues"
+    InvestmentComparisonResponse:
+      type: object
+      description: Comparaison à une date commune. difference est toujours calculée
+        comme alternative moins original.
+      properties:
+        valuationDate:
+          type: string
+          format: date
+          description: Date cible commune aux deux scénarios
+          example: 2026-12-31
+        valuationStatus:
+          type: string
+          description: "COMPLETE si les deux scénarios sont entièrement valorisés,\
+            \ PARTIAL sinon"
+          enum:
+          - COMPLETE
+          - PARTIAL
+        original:
+          $ref: "#/components/schemas/InvestmentComparisonScenario"
+        alternative:
+          $ref: "#/components/schemas/InvestmentComparisonScenario"
+        difference:
+          $ref: "#/components/schemas/InvestmentComparisonDifference"
+    InvestmentComparisonScenario:
+      type: object
+      description: Paramètres et résultat calculé d'un scénario
+      properties:
+        operationId:
+          type:
+          - string
+          - "null"
+          format: uuid
+          description: Identifiant de l'opération enregistrée ; absent pour l'alternative
+        parameters:
+          oneOf:
+          - $ref: "#/components/schemas/ComparisonOneTimePaymentParameters"
+          - $ref: "#/components/schemas/ComparisonDcaParameters"
+        valuation:
+          $ref: "#/components/schemas/ComparisonValuation"
+    ComparisonInstallment:
+      type: object
+      description: Échéance calculée par le domaine avec ses achats et valorisations
+      properties:
+        dueDate:
+          type: string
+          format: date
+        executionDate:
+          type: string
+          format: date
+        nature:
+          type: string
+          enum:
+          - OBSERVED
+          - PROJECTED
+          - MIXED
+          - PARTIAL
+          - NOT_YET_EXECUTED
+        amount:
+          type: number
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparisonInstallmentAllocation"
+    ComparisonInstallmentAllocation:
+      type: object
+      description: Détail par support d'un achat DCA à l'échéance
+      properties:
+        instrumentKind:
+          type: string
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type:
+          - string
+          - "null"
+        name:
+          type:
+          - string
+          - "null"
+        amount:
+          type: number
+        shares:
+          type:
+          - number
+          - "null"
+        purchasePrice:
+          type:
+          - number
+          - "null"
+        purchasePriceDate:
+          type:
+          - string
+          - "null"
+          format: date
+        observedPrice:
+          type:
+          - number
+          - "null"
+        observedDate:
+          type:
+          - string
+          - "null"
+          format: date
+        value:
+          type:
+          - number
+          - "null"
+        gain:
+          type:
+          - number
+          - "null"
+        status:
+          type: string
+          enum:
+          - COURS
+          - PROJETEE
+          - INDISPONIBLE
+          - NON_EXECUTEE
+        purchaseStatus:
+          type: string
+          enum:
+          - COURS
+          - PROJETEE
+          - INDISPONIBLE
+          - NON_EXECUTEE
+        annualReturns:
+          type: array
+          items:
+            type: number
+        annualRates:
+          type: array
+          items:
+            type: number
+    ComparisonValuation:
+      type: object
+      description: Totaux calculés et détails par support et échéance
+      properties:
+        valuationDate:
+          type: string
+          format: date
+        invested:
+          type: number
+        value:
+          type:
+          - number
+          - "null"
+          description: Null si le scénario est partiel
+        gain:
+          type:
+          - number
+          - "null"
+          description: Null si le scénario est partiel
+        gainRatePct:
+          type:
+          - number
+          - "null"
+          description: Null si le scénario est partiel
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparisonValuedAllocation"
+        installments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparisonInstallment"
+    ComparisonValuedAllocation:
+      type: object
+      description: Valorisation cumulée du support dans le scénario
+      properties:
+        instrumentKind:
+          type: string
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type:
+          - string
+          - "null"
+        name:
+          type:
+          - string
+          - "null"
+        invested:
+          type: number
+        shares:
+          type:
+          - number
+          - "null"
+        averagePurchasePrice:
+          type:
+          - number
+          - "null"
+        observedPrice:
+          type:
+          - number
+          - "null"
+        observedDate:
+          type:
+          - string
+          - "null"
+          format: date
+        value:
+          type:
+          - number
+          - "null"
+        gain:
+          type:
+          - number
+          - "null"
+        status:
+          type: string
+          enum:
+          - COURS
+          - PROJETEE
+          - INDISPONIBLE
+          - NON_EXECUTEE
+        purchaseStatus:
+          type: string
+          enum:
+          - COURS
+          - PROJETEE
+          - INDISPONIBLE
+          - NON_EXECUTEE
+        annualReturns:
+          type: array
+          items:
+            type: number
+        annualRates:
+          type: array
+          items:
+            type: number
+    InvestmentComparisonDifference:
+      type: object
+      description: Écart calculé explicitement comme alternative moins original
+      properties:
+        invested:
+          type: number
+        value:
+          type:
+          - number
+          - "null"
+          description: Null quand les deux valeurs ne sont pas comparables
+        gain:
+          type:
+          - number
+          - "null"
+          description: Null quand les deux gains ne sont pas comparables
+        gainRatePercentagePoints:
+          type:
+          - number
+          - "null"
+          description: "Écart en points de pourcentage, null si comparaison incomplè\
+            te"
     RecordDcaInvestmentRequest:
       type: object
       description: Création d'un plan d'investissement programmé
@@ -768,6 +1290,70 @@ components:
       - allocations
       - amount
       - date
+    AlternativeDcaInvestment:
+      type: object
+      description: Configuration hypothétique du plan DCA alternatif
+      properties:
+        amount:
+          type: number
+          description: Montant de chaque échéance mensuelle
+          example: 300.0
+        date:
+          type: string
+          format: date
+          description: Date de mise en place du plan
+          example: 2026-08-01
+        executionDay:
+          type: integer
+          format: int32
+          description: Jour d'exécution souhaité (1 à 31)
+          example: 10
+          maximum: 31
+          minimum: 1
+        delayBusinessDays:
+          type: integer
+          format: int32
+          description: Délai d'exécution en jours ouvrés
+          example: 3
+          maximum: 365
+          minimum: 0
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AllocationRequest"
+          minItems: 1
+      required:
+      - allocations
+      - amount
+      - date
+      - delayBusinessDays
+    CompareDcaInvestmentRequest:
+      type: object
+      description: Comparaison sans effet de bord d'un plan DCA avec une hypothèse
+        alternative
+      properties:
+        valuationDate:
+          type: string
+          format: date
+          description: Date commune de valorisation pour les deux scénarios
+          example: 2026-12-31
+        alternative:
+          $ref: "#/components/schemas/AlternativeDcaInvestment"
+        projectionAssumptions:
+          type: array
+          description: Hypothèses annuelles par ISIN. 0.05 représente 5 %.
+          items:
+            $ref: "#/components/schemas/ComparisonProjectionAssumption"
+        euroFundAssumptions:
+          type: array
+          description: Hypothèses annuelles par fonds euro. 0.03 représente 3 %.
+          items:
+            $ref: "#/components/schemas/ComparisonEuroFundAssumption"
+      required:
+      - alternative
+      - euroFundAssumptions
+      - projectionAssumptions
+      - valuationDate
     PortfolioDcaAllocationResponse:
       type: object
       description: Montant mensuel affecté à un support du plan DCA
