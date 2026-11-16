@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { AllocationLine, Operation, Security } from "@/domain/models/operation";
+import type { Operation, Security } from "@/domain/models/operation";
+import type { AllocationDraft, AllocationDraftField } from "@/presentation/models/allocation-draft";
 import { ActionButton, Card, PageHeading, Pill, SectionTitle, TextField } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 import { DateField } from "@/presentation/components/date-field";
 
-type AllocationField = "isin" | "amount" | "instrumentKind" | "name";
+type AllocationField = AllocationDraftField;
 
 export function ScenarioFormScreen(props: {
   operation: Operation;
@@ -15,7 +16,7 @@ export function ScenarioFormScreen(props: {
   total: string;
   executionDay: string;
   delayBusinessDays: string;
-  lines: AllocationLine[];
+  lines: AllocationDraft[];
   securities: Security[];
   assumptions: Record<string, string>;
   error: string;
@@ -34,7 +35,7 @@ export function ScenarioFormScreen(props: {
 }) {
   const { operation, operations, startDate, date, total, executionDay, delayBusinessDays, lines, securities } = props;
   const savedPlans = operations.filter((item) => item.kind === "dca" && item.id !== operation.id);
-  const update = (line: AllocationLine, field: AllocationField, value: string) => props.onLineChange(line.id, field, value);
+  const update = (line: AllocationDraft, field: AllocationField, value: string) => props.onLineChange(line.id, field, value);
   const targetMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
   const targetDate = targetMatch ? new Date(Number(targetMatch[3]), Number(targetMatch[2]) - 1, Number(targetMatch[1])) : null;
   const today = new Date(); today.setHours(0, 0, 0, 0);

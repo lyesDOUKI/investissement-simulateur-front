@@ -1,13 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { AllocationLine, Security } from "@/domain/models/operation";
+import type { Security } from "@/domain/models/operation";
+import type { AllocationDraft, AllocationDraftField } from "@/presentation/models/allocation-draft";
 import { ActionButton, Card, PageHeading, Pill, TextField } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { DateField } from "@/presentation/components/date-field";
 
-type ChangeField = "isin" | "name" | "amount" | "instrumentKind";
+type ChangeField = AllocationDraftField;
 
 export function InvestmentFormScreen(props: {
-  kind: "versement" | "dca"; total: string; lines: AllocationLine[]; securities: Security[];
+  kind: "versement" | "dca"; total: string; lines: AllocationDraft[]; securities: Security[];
   date: string; executionDay: string; delayBusinessDays: string; error: string;
   loading: boolean;
   onTotalChange: (value: string) => void; onLineChange: (id: string, field: ChangeField, value: string) => void;
@@ -15,7 +16,7 @@ export function InvestmentFormScreen(props: {
   onExecutionDayChange: (value: string) => void; onDelayChange: (value: string) => void; onSubmit: () => void;
 }) {
   const { kind, total, lines, securities, date, executionDay, delayBusinessDays, error } = props;
-  const d = (line: AllocationLine) => (field: ChangeField, value: string) => props.onLineChange(line.id, field, value);
+  const d = (line: AllocationDraft) => (field: ChangeField, value: string) => props.onLineChange(line.id, field, value);
   return <>
     <PageHeading eyebrow={kind === "dca" ? "Versements réguliers · DCA" : "Historique réel"}
       title={kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
