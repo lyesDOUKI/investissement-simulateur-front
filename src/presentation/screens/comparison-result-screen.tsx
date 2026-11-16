@@ -69,7 +69,7 @@ function ScenarioCard({ title, details, valuation, isDca, highlighted = false }:
         <Text style={styles.installmentDate}>Achat exécuté le {formatDateLabel(installment.executionDate)}</Text>
         <Text style={styles.meta}>Échéance prévue le {formatDateLabel(installment.dueDate)} · {euro(installment.amount)} au total</Text>
         {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentSupport}>
-          <Text style={styles.meta}>{line.name} · {line.isin}</Text>
+          <Text style={styles.meta}>{line.isin && line.isin !== "FONDS-EURO" ? line.isin : line.name}</Text>
           <View style={styles.installmentRow}><Text style={styles.meta}>Montant placé</Text><Text style={styles.installmentValue}>{euro(line.amount)}</Text></View>
           <View style={styles.installmentRow}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.installmentValue}>{line.shares.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 })}</Text></View>
           <View style={styles.installmentRow}><Text style={styles.meta}>Prix à l’achat{line.purchasePriceDate ? " · " + formatDateLabel(line.purchasePriceDate) : ""}</Text><Text style={styles.installmentValue}>{line.purchasePrice === undefined ? "Indisponible" : euro(line.purchasePrice)}</Text></View>

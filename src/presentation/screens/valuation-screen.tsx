@@ -67,7 +67,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
             <Text style={styles.meta}>Échéance prévue le {formatDateLabel(installment.dueDate)} · {euro(installment.amount)} au total</Text>
           </View>
           {installment.allocations.map((line, lineIndex) => <View key={line.isin + lineIndex} style={styles.installmentAllocation}>
-            <Text style={styles.detailTitle}>{line.name}</Text>
+            <Text style={styles.detailTitle}>{line.isin && line.isin !== "FONDS-EURO" ? line.isin : line.name}</Text>
             <Text style={styles.meta}>{line.isin}</Text>
             <View style={styles.row}><Text style={styles.meta}>Montant placé</Text><Text style={styles.detailValue}>{euro(line.amount)}</Text></View>
             <View style={styles.row}><Text style={styles.meta}>Parts acquises</Text><Text style={styles.detailValue}>{units(line.shares)}</Text></View>
