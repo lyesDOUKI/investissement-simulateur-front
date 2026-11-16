@@ -33,10 +33,10 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
 
     <Card style={styles.parameters}>
       <Text style={styles.parametersTitle}>{result ? "Changer la date de valorisation" : "Choisir une date de valorisation"}</Text>
-      <DateField label="Date cible" value={date} onChange={onDateChange} helper="La valeur sera demandée au service pour cette date." />
+      <DateField label="Date cible" value={date} onChange={onDateChange} helper="Choisissez la date à laquelle consulter la valeur estimée de vos placements." />
       {future && supports.length > 0 ? <View style={styles.assumptions}>
         <Text style={styles.parametersTitle}>Hypothèses de rendement</Text>
-        <Text style={styles.meta}>Une hypothèse par support UC. Elle ne s’applique que si le service doit projeter un cours futur.</Text>
+        <Text style={styles.meta}>Pour une date future, indiquez le rendement annuel envisagé pour chaque UC. Cette hypothèse sert uniquement aux projections du service ; elle ne prédit pas la performance réelle.</Text>
         {supports.map((support) => {
           const title = support.name && support.name !== support.isin ? support.name : support.symbol ?? support.isin;
           const label = [title, support.symbol && support.symbol !== title ? support.symbol : null, `ISIN ${support.isin}`].filter(Boolean).join(" · ");

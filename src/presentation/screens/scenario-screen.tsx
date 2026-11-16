@@ -5,6 +5,7 @@ import { ActionButton, Card, PageHeading, Pill, SectionTitle, TextField } from "
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 import { DateField } from "@/presentation/components/date-field";
+import { InstrumentIdentity } from "@/presentation/components/instrument-identity";
 
 type AllocationField = AllocationDraftField;
 
@@ -54,7 +55,7 @@ export function ScenarioFormScreen(props: {
     <Card style={styles.targetDate}>
       <Text style={styles.referenceEyebrow}>1 · DATE COMMUNE DE VALORISATION</Text>
       <Text style={styles.helper}>A et B seront valorisés à cette même date pour rendre leurs résultats comparables.</Text>
-      <DateField label="Date cible" value={date} onChange={props.onDateChange} />
+      <DateField label="Date cible commune" value={date} onChange={props.onDateChange} helper="A et B seront comparés à cette date. Pour une date future, une hypothèse de rendement sera demandée pour chaque support UC." />
     </Card>
 
     <Card style={styles.reference}>
@@ -63,7 +64,10 @@ export function ScenarioFormScreen(props: {
       <Text style={styles.referenceMeta}>{operation.kind === "dca" ? "Versements réguliers · " + totalLabel(operation.amount) + " / mois" : "Versement · " + totalLabel(operation.amount)}</Text>
       <Text style={styles.referenceMeta}>Début : {formatDateLabel(operation.date)}</Text>
       {operation.kind === "dca" ? <Text style={styles.referenceMeta}>Prélèvement le {operation.executionDay} · délai {operation.delayBusinessDays} jours ouvrés</Text> : null}
-      <View style={styles.referenceLines}>{operation.allocations.map((line) => <Text key={line.id} style={styles.referenceMeta}>• {line.symbol ? `${line.symbol} · ` : ""}{line.name ?? line.isin} · {totalLabel(line.amount)}</Text>)}</View>
+      <View style={styles.referenceLines}>{operation.allocations.map((line) => <View key={line.id} style={styles.referenceLine}>
+        <InstrumentIdentity name={line.name ?? securities.find((security) => security.isin === line.isin)?.shortName} symbol={line.symbol ?? securities.find((security) => security.isin === line.isin)?.symbol} isin={line.instrumentKind === "uc" ? line.isin : null} fallback="Fonds euro" titleStyle={styles.referenceMeta} />
+        <Text style={styles.referenceMeta}>{totalLabel(line.amount)}{operation.kind === "dca" ? " / mois" : ""}</Text>
+      </View>)}</View>
     </Card>
 
     <Card style={styles.card}>
@@ -80,15 +84,15 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{savedPlans.map((plan) => <Pill key={plan.id} label={formatDateLabel(plan.date) + " · " + plan.amount.toLocaleString("fr-FR") + " € / mois"} onPress={() => props.onUseSavedPlan(plan)} />)}</View>
       </View> : null}
 
-      <DateField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChange={props.onStartDateChange} />
-      <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} />
+      <DateField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChange={props.onStartDateChange} helper={operation.kind === "dca" ? "Première date de référence du plan alternatif." : "Date à laquelle le versement alternatif aurait été réalisé."} />
+      <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} placeholder={operation.kind === "dca" ? "Ex. 200,00" : "Ex. 1 000,00"} />
       {operation.kind === "dca" ? <>
         <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
         <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" />
       </> : null}
     </Card>
 
-    <SectionTitle title="3 · Allocation du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
+    <SectionTitle title="3 · Répartition du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
     {lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHeader}>
         <Text style={styles.lineTitle}>Support {index + 1}</Text>
@@ -98,19 +102,25 @@ export function ScenarioFormScreen(props: {
         <Pill label="UC · ISIN" active={line.instrumentKind === "uc"} onPress={() => update(line, "instrumentKind", "uc")} />
         <Pill label="Fonds euro" active={line.instrumentKind === "fonds-euro"} onPress={() => update(line, "instrumentKind", "fonds-euro")} />
       </View>
-      {line.instrumentKind === "uc" ? <Text style={styles.helper}>UC signifie « unité de compte ». Le code ISIN identifie chaque support de cette catégorie.</Text> : null}
       {line.instrumentKind === "uc" ? <>
-        <TextField label="Code ISIN" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. FR0010380675" autoCapitalize="characters" helper="L’ISIN identifie le support choisi." />
-        <View style={styles.pills}>{securities.map((security) => <Pill key={security.isin} label={security.shortName} onPress={() => update(line, "isin", security.isin)} />)}</View>
+        <Text style={styles.helper}>Le symbole est le code court du support ; l’ISIN est son identifiant complet.</Text>
+        <TextField label="Code ISIN" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. FR0010380675" autoCapitalize="characters" helper="Saisissez un ISIN ou choisissez un support déjà suivi ci-dessous." />
+        {securities.length > 0 ? <View style={styles.securitySuggestions}>
+          <Text style={styles.helper}>Supports déjà suivis</Text>
+          {securities.map((security) => <Pressable key={security.isin} accessibilityRole="button" accessibilityLabel={`Choisir ${security.name}, ${security.symbol ? `symbole ${security.symbol}, ` : ""}ISIN ${security.isin}`} onPress={() => update(line, "isin", security.isin)} style={styles.securitySuggestion}>
+            <InstrumentIdentity name={security.shortName ?? security.name} symbol={security.symbol} isin={security.isin} />
+            <Text style={styles.suggestionAction}>Choisir</Text>
+          </Pressable>)}
+        </View> : null}
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(value) => update(line, "name", value)} placeholder="Fonds euro du contrat" />
       </>}
-      <TextField label="Montant affecté" value={String(line.amount || "")} onChangeText={(value) => update(line, "amount", value)} keyboardType="decimal-pad" suffix="€" />
+      <TextField label="Montant affecté" value={String(line.amount || "")} onChangeText={(value) => update(line, "amount", value)} keyboardType="decimal-pad" suffix="€" placeholder="Ex. 100,00" />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.addLine}><Text style={styles.addText}>＋ Ajouter un support au scénario B</Text></Pressable>
     {needsProjection && scenarioIsins.length > 0 ? <Card style={styles.projectionCard}>
       <Text style={styles.sectionTitle}>4 · Hypothèses de rendement à la date cible</Text>
-      <Text style={styles.helper}>Renseignez une hypothèse annuelle pour chaque ISIN. Si un support est présent dans A et B, le même taux s’applique aux deux scénarios.</Text>
+      <Text style={styles.helper}>Indiquez le rendement annuel envisagé jusqu’à la date cible. Un ISIN commun à A et B utilise le même taux dans les deux scénarios.</Text>
       {scenarioIsins.map((isin) => {
         const inA = operation.allocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const inB = lines.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
@@ -137,7 +147,7 @@ const styles = StyleSheet.create({
   referenceEyebrow: { color: p.forestLight, fontSize: 9, fontWeight: "800", letterSpacing: 1 },
   referenceTitle: { color: p.ink, fontSize: 15, fontWeight: "700" },
   referenceMeta: { color: p.muted, fontSize: 12, lineHeight: 17 },
-  referenceLines: { borderTopWidth: 1, borderColor: p.line, paddingTop: 7, marginTop: 4, gap: 3 },
+  referenceLines: { borderTopWidth: 1, borderColor: p.line, paddingTop: 7, marginTop: 4, gap: 8 }, referenceLine: { flexDirection: "row", alignItems: "center", gap: 10 },
   card: { gap: 15, marginBottom: 10 },
   alternativeHeading: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 2 },
   savedPlans: { gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 12 },
@@ -150,6 +160,9 @@ const styles = StyleSheet.create({
   lineTitle: { color: p.ink, fontSize: 14, fontWeight: "700" },
   remove: { color: p.red, fontSize: 12, fontWeight: "600" },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  securitySuggestions: { gap: 3, borderWidth: 1, borderColor: p.line, borderRadius: 14, overflow: "hidden", padding: 9, backgroundColor: p.surfaceSubtle },
+  securitySuggestion: { minHeight: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 7, borderBottomWidth: 1, borderColor: p.line },
+  suggestionAction: { color: p.forestLight, fontSize: 11, fontWeight: "700" },
   addLine: { paddingVertical: 16 },
   addText: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
   note: { backgroundColor: p.surfaceSubtle, gap: 5, marginTop: 5, marginBottom: 12 },

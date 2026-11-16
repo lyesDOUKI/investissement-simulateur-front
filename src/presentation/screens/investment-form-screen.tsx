@@ -20,33 +20,33 @@ export function InvestmentFormScreen(props: {
   return <>
     <PageHeading eyebrow={kind === "dca" ? "Versements réguliers · DCA" : "Historique réel"}
       title={kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
-      subtitle={kind === "dca" ? "DCA désigne des versements réguliers sur des supports choisis. Saisissez les paramètres du plan ; le service métier renverra ses échéances et leur valorisation." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
+      subtitle={kind === "dca" ? "Un plan DCA investit régulièrement sur les supports choisis. Saisissez son montant, son calendrier et sa répartition ; chaque échéance sera détaillée ensuite." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
     <Card style={styles.card}>
       <TextField label={kind === "dca" ? "Montant à chaque échéance" : "Montant versé"} value={total}
-        onChangeText={props.onTotalChange} placeholder="0" keyboardType="decimal-pad" suffix="€" />
+        onChangeText={props.onTotalChange} placeholder="Ex. 500,00" keyboardType="decimal-pad" suffix="€" helper={kind === "dca" ? "Montant total investi chaque mois, réparti entre les supports ci-dessous." : "Montant total de ce versement déjà réalisé."} />
       <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
-        onChange={props.onDateChange} helper="Sélectionnez la date dans le calendrier." />
+        onChange={props.onDateChange} helper={kind === "dca" ? "Date de mise en place du plan." : "Date à laquelle le versement a été exécuté chez votre courtier."} />
       {kind === "dca" ? <>
         <TextField label="Jour de l’échéance chaque mois" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" helper="Jour du mois qui sert de base au calcul des échéances." />
         <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" helper="Le service détermine la date d’exécution à partir de l’échéance et de ce délai." />
       </> : null}
     </Card>
-    <View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.title}>Allocation par support</Text>
-      <Text style={styles.helper}>Montant affecté à chaque ISIN ou fonds euro.</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
+    <View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.title}>Répartition entre les supports</Text>
+      <Text style={styles.helper}>Répartissez le montant total entre les supports. La somme des lignes doit correspondre au montant saisi.</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
     {lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHead}><Text style={styles.title}>Ligne {index + 1}</Text>
         {lines.length > 1 ? <Pressable onPress={() => props.onRemoveLine(line.id)}><Text style={styles.remove}>Retirer</Text></Pressable> : null}</View>
       <View style={styles.pills}><Pill label="UC · ISIN" active={line.instrumentKind === "uc"} onPress={() => d(line)("instrumentKind", "uc")} />
         <Pill label="Fonds euro" active={line.instrumentKind === "fonds-euro"} onPress={() => d(line)("instrumentKind", "fonds-euro")} /></View>
-      {line.instrumentKind === "uc" ? <Text style={styles.helper}>UC signifie « unité de compte ». Le code ISIN identifie chaque support de cette catégorie.</Text> : null}
       {line.instrumentKind === "uc" ? <>
+        <Text style={styles.helper}>Le symbole est le code court du support ; l’ISIN est son identifiant complet.</Text>
         <TextField label="Code ISIN" value={line.isin} onChangeText={(v) => d(line)("isin", v.toUpperCase().replace(/\s/g, ""))}
-          placeholder="Rechercher par nom ou ISIN" autoCapitalize="characters" helper="Choisissez un support déjà saisi ou entrez son ISIN." />
+          placeholder="Rechercher par nom, symbole ou ISIN" autoCapitalize="characters" helper="Choisissez une suggestion pour reprendre son ISIN, ou saisissez l’ISIN complet." />
         {line.isin.length > 0 ? <View style={styles.suggestions}>
-          {securities.filter((s) => s.isin.toLowerCase().includes(line.isin.toLowerCase()) || s.name.toLowerCase().includes(line.isin.toLowerCase()) || s.shortName.toLowerCase().includes(line.isin.toLowerCase())).slice(0, 5).map((security) => <Pressable key={security.isin} accessibilityRole="button" accessibilityLabel={`Choisir ${security.name}, ISIN ${security.isin}`} onPress={() => d(line)("isin", security.isin)} style={styles.suggestion}>
+          {securities.filter((s) => s.isin.toLowerCase().includes(line.isin.toLowerCase()) || s.name.toLowerCase().includes(line.isin.toLowerCase()) || s.shortName.toLowerCase().includes(line.isin.toLowerCase()) || s.symbol?.toLowerCase().includes(line.isin.toLowerCase())).slice(0, 5).map((security) => <Pressable key={security.isin} accessibilityRole="button" accessibilityLabel={`Choisir ${security.name}, ${security.symbol ? `symbole ${security.symbol}, ` : ""}ISIN ${security.isin}`} onPress={() => d(line)("isin", security.isin)} style={styles.suggestion}>
             <View style={styles.suggestionDot} /><View style={styles.suggestionText}><Text style={styles.suggestionName}>{security.name}</Text><Text style={styles.helper}>{security.symbol ? `${security.symbol} · ` : ""}ISIN {security.isin}</Text></View><Text style={styles.suggestionArrow}>＋</Text>
           </Pressable>)}
-          {securities.every((s) => !s.isin.toLowerCase().includes(line.isin.toLowerCase()) && !s.name.toLowerCase().includes(line.isin.toLowerCase()) && !s.shortName.toLowerCase().includes(line.isin.toLowerCase())) ? <Text style={styles.helper}>Aucun support connu ne correspond. Vous pouvez saisir l’ISIN complet manuellement.</Text> : null}
+          {securities.every((s) => !s.isin.toLowerCase().includes(line.isin.toLowerCase()) && !s.name.toLowerCase().includes(line.isin.toLowerCase()) && !s.shortName.toLowerCase().includes(line.isin.toLowerCase()) && !s.symbol?.toLowerCase().includes(line.isin.toLowerCase())) ? <Text style={styles.helper}>Aucun support connu ne correspond. Vous pouvez saisir son ISIN complet manuellement.</Text> : null}
         </View> : securities.length > 0 ? <View style={styles.suggestions}><Text style={styles.helper}>Supports déjà utilisés</Text>{securities.slice(0, 5).map((security) => <Pressable key={security.isin} accessibilityRole="button" onPress={() => d(line)("isin", security.isin)} style={styles.suggestion}><View style={styles.suggestionDot} /><View style={styles.suggestionText}><Text style={styles.suggestionName}>{security.name}</Text><Text style={styles.helper}>{security.symbol ? `${security.symbol} · ` : ""}ISIN {security.isin}</Text></View><Text style={styles.suggestionArrow}>＋</Text></Pressable>)}</View> : null}
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(v) => d(line)("name", v)} placeholder="Ex. Fonds euro contrat" />
@@ -54,8 +54,8 @@ export function InvestmentFormScreen(props: {
       <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.add}><Text style={styles.addText}>＋ Ajouter un support</Text></Pressable>
-    <Card style={styles.summary}><Text style={styles.title}>Répartition envoyée avec la demande</Text>
-      <Text style={styles.helper}>Le service métier vérifiera la cohérence entre le montant et les lignes de supports.</Text></Card>
+    <Card style={styles.summary}><Text style={styles.title}>À vérifier avant l’enregistrement</Text>
+      <Text style={styles.helper}>Chaque ligne correspond au montant affecté à un support. Vérifiez que leur somme correspond au montant du versement ou de chaque échéance.</Text></Card>
     <Card style={styles.notice}><Text style={styles.noticeText}>{kind === "dca" ? "Cette fiche décrit votre plan. À la valorisation, le service détaille les achats par échéance. Aucun ordre n’est envoyé au courtier." : "Cette saisie conserve la trace d’un versement déjà réalisé. Aucun ordre n’est envoyé au courtier."}</Text></Card>
     {error ? <Text style={styles.error}>{error}</Text> : null}
     <ActionButton label={kind === "dca" ? "Enregistrer le plan →" : "Enregistrer ce versement →"} onPress={props.onSubmit} loading={props.loading} />
