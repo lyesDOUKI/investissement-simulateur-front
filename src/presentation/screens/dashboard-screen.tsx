@@ -151,7 +151,7 @@ export function DashboardScreen({
                     </View>
                     {holding.status === "unavailable" ? <Text style={styles.holdingIsin}>Valeur indisponible</Text> : null}
                     {holding.status === "projected" ? <Text style={styles.holdingIsin}>Valeur projetée par le service</Text> : null}
-                    {holding.observedDate ? <Text style={styles.holdingIsin}>Cours observé au {formatDateLabel(holding.observedDate)}</Text> : null}
+                    {holding.observedDate ? <Text style={styles.holdingIsin}>Dernier cours disponible · {formatDateLabel(holding.observedDate)}</Text> : null}
                     {holding.sharePct !== null ? <View style={styles.track}>
                       <View style={[styles.trackFill, { width: `${holding.sharePct}%`, backgroundColor: holding.color ?? security?.color ?? p.forestLight }]} />
                     </View> : null}

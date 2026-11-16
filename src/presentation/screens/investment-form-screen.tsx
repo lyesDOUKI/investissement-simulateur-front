@@ -4,16 +4,15 @@ import { ActionButton, Card, PageHeading, Pill, TextField } from "@/presentation
 import { palette as p } from "@/presentation/theme";
 import { DateField } from "@/presentation/components/date-field";
 
-type ChangeField = "isin" | "name" | "amount" | "instrumentKind" | "annualReturnPct";
+type ChangeField = "isin" | "name" | "amount" | "instrumentKind";
 
 export function InvestmentFormScreen(props: {
   kind: "versement" | "dca"; total: string; lines: AllocationLine[]; securities: Security[];
   date: string; executionDay: string; delayBusinessDays: string; error: string;
-  annualReturnPct: string; loading: boolean;
+  loading: boolean;
   onTotalChange: (value: string) => void; onLineChange: (id: string, field: ChangeField, value: string) => void;
   onAddLine: () => void; onRemoveLine: (id: string) => void; onDateChange: (value: string) => void;
   onExecutionDayChange: (value: string) => void; onDelayChange: (value: string) => void; onSubmit: () => void;
-  onAnnualReturnChange: (value: string) => void;
 }) {
   const { kind, total, lines, securities, date, executionDay, delayBusinessDays, error } = props;
   const d = (line: AllocationLine) => (field: ChangeField, value: string) => props.onLineChange(line.id, field, value);
@@ -27,12 +26,9 @@ export function InvestmentFormScreen(props: {
       <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
         onChange={props.onDateChange} helper="Sélectionnez la date dans le calendrier." />
       {kind === "dca" ? <>
-        <TextField label="Jour de prélèvement mensuel" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" helper="Paramètre transmis au service métier." />
-        <TextField label="Décalage avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" helper="Le calendrier et les règles d’exécution sont déterminés par le service métier." />
+        <TextField label="Jour de l’échéance chaque mois" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" helper="Jour du mois qui sert de base au calcul des échéances." />
+        <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" helper="Le service détermine la date d’exécution à partir de l’échéance et de ce délai." />
       </> : null}
-      {kind === "versement" ? <TextField label="Taux de rendement annuel (hypothèse)" value={props.annualReturnPct}
-        onChangeText={props.onAnnualReturnChange} placeholder="Ex. 5" keyboardType="decimal-pad" suffix="%"
-        helper="Hypothèse transmise au service de simulation. Elle ne prédit pas un rendement réel." /> : null}
     </Card>
     <View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.title}>Allocation par support</Text>
       <Text style={styles.helper}>Montant affecté à chaque ISIN ou fonds euro.</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
@@ -53,15 +49,13 @@ export function InvestmentFormScreen(props: {
         </View> : securities.length > 0 ? <View style={styles.suggestions}><Text style={styles.helper}>Supports déjà utilisés</Text>{securities.slice(0, 5).map((security) => <Pressable key={security.isin} accessibilityRole="button" onPress={() => d(line)("isin", security.isin)} style={styles.suggestion}><View style={styles.suggestionDot} /><View style={styles.suggestionText}><Text style={styles.suggestionName}>{security.name}</Text><Text style={styles.helper}>{security.isin}</Text></View><Text style={styles.suggestionArrow}>＋</Text></Pressable>)}</View> : null}
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(v) => d(line)("name", v)} placeholder="Ex. Fonds euro contrat" />
-        <TextField label="Rendement annuel utilisé pour la simulation" value={String(line.annualReturnPct ?? "0")}
-          onChangeText={(v) => d(line)("annualReturnPct", v)} keyboardType="decimal-pad" suffix="%" helper="Hypothèse modifiable, distincte d’un cours de marché." />
       </>}
       <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.add}><Text style={styles.addText}>＋ Ajouter un support</Text></Pressable>
     <Card style={styles.summary}><Text style={styles.title}>Répartition envoyée avec la demande</Text>
       <Text style={styles.helper}>Le service métier vérifiera la cohérence entre le montant et les lignes de supports.</Text></Card>
-    <Card style={styles.notice}><Text style={styles.noticeText}>{kind === "dca" ? "Cette fiche décrit votre plan. Les échéances historiques sont calculées à la valorisation." : "Cette saisie conserve une trace dans l’application. Aucun ordre n’est envoyé à votre courtier."}</Text></Card>
+    <Card style={styles.notice}><Text style={styles.noticeText}>{kind === "dca" ? "Cette fiche décrit votre plan. À la valorisation, le service détaille les achats par échéance. Aucun ordre n’est envoyé au courtier." : "Cette saisie conserve la trace d’un versement déjà réalisé. Aucun ordre n’est envoyé au courtier."}</Text></Card>
     {error ? <Text style={styles.error}>{error}</Text> : null}
     <ActionButton label={kind === "dca" ? "Enregistrer le plan →" : "Enregistrer ce versement →"} onPress={props.onSubmit} loading={props.loading} />
   </>;

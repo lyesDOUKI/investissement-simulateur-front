@@ -76,7 +76,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const created = await this.request(path, { method: "POST", body: JSON.stringify(body) });
     const details = await this.request(`${path}/${created.id}`);
     const operation = input.kind === "dca" ? this.plan(details) : this.payment(details);
-    operation.annualReturnPct = input.annualReturnPct; this.operations.set(operation.id, operation); return operation;
+    this.operations.set(operation.id, operation); return operation;
   }
   async valueOperation(id: string, input: ValueOperationInput): Promise<InvestmentValuation> {
     const op = this.operations.get(id) ?? await this.getById(id);
@@ -99,7 +99,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
     const installments = (x.installments ?? []).map((i: AnyObject) => ({
       dueDate: dateLocal(i.dueDate), executionDate: dateLocal(i.executionDate), nature: installmentNature(i.nature), amount: i.amount,
-      allocations: (i.allocations ?? []).map((a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? "Fonds euro", amount: a.amount ?? 0, shares: a.shares ?? 0, value: a.value, gain: a.gain, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: valuationStatus(a.status), annualReturn: a.annualReturn, annualRate: a.annualRate })),
+      allocations: (i.allocations ?? []).map((a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? "Fonds euro", amount: a.amount ?? 0, shares: a.shares ?? null, value: a.value, gain: a.gain, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: valuationStatus(a.status), annualReturn: a.annualReturn, annualRate: a.annualRate })),
     }));
     const allocations: InvestmentValuation["allocations"] = (x.allocations ?? []).map(allocation);
     return { operationId: x.operationId, valuationDate: dateLocal(x.valuationDate), invested: x.invested, value: x.value, gain: x.gain, gainRatePct: x.gainRatePct, installmentCount: installments.length, installments: kind === "dca" ? installments : [], allocations, hasMissingPrices: allocations.some((a) => a.status === "missing") || installments.some((i: InvestmentValuation["installments"][number]) => i.allocations.some((a) => a.status === "missing")) };

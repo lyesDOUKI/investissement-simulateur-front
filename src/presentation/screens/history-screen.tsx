@@ -49,10 +49,10 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
         </View>
         <View style={styles.actions}>
           <Pressable onPress={() => onValue(operation)} style={styles.actionButton}>
-            <Text style={styles.actionText}>Valeur à une date →</Text>
+            <Text style={styles.actionText}>Voir la valeur à une date →</Text>
           </Pressable>
           {compareEnabled ? <Pressable onPress={() => onCompare(operation)} style={[styles.actionButton, styles.actionButtonSecondary]}>
-            <Text style={styles.actionText}>Et si ?</Text>
+            <Text style={styles.actionText}>Comparer un scénario</Text>
           </Pressable> : null}
         </View>
       </Card>)}

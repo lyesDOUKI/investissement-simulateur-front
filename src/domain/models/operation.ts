@@ -7,7 +7,6 @@ export interface AllocationLine {
   isin: string;
   name?: string;
   amount: number;
-  annualReturnPct?: number;
 }
 
 export interface Security {
@@ -29,7 +28,6 @@ export interface Operation {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
-  annualReturnPct?: number;
 }
 
 /** Backend response DTO for a valuation; the front only renders these fields. */
@@ -59,7 +57,7 @@ export interface InstallmentValuation {
     isin: string;
     name: string;
     amount: number;
-    shares: number;
+    shares: number | null;
     value?: number;
     gain?: number;
     purchasePrice?: number;
@@ -128,7 +126,6 @@ export interface CreateOperationInput {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
-  annualReturnPct?: number;
 }
 
 export interface ValueOperationInput {

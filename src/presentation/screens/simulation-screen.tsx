@@ -13,7 +13,7 @@ export function SimulationScreen({ operations, onValue, onCompare, compareEnable
     <Text style={styles.label}>CHOISIR UNE OPÉRATION DE DÉPART</Text>
     {operations.length === 0 ? <Card style={styles.empty}><Text style={styles.title}>Commencez par une opération de référence</Text><Text style={text.label}>Saisissez un versement ou un plan à versements réguliers dans le Journal, puis revenez ici pour créer une comparaison.</Text><ActionButton label="Ouvrir le journal →" tone="light" onPress={onJournal}/></Card> : operations.map((operation) => <Card key={operation.id} style={styles.item}>
       <View style={styles.row}><View style={styles.icon}><Text style={styles.iconText}>{operation.kind === "dca" ? "↻" : "↑"}</Text></View><View style={{flex:1,gap:4}}><Text style={styles.title}>{operation.label}</Text><Text style={styles.meta}>{formatDateLabel(operation.date)} · {operation.allocations.length} support{operation.allocations.length===1?"":"s"}</Text></View><Text style={styles.amount}>{operation.amount.toLocaleString("fr-FR")} €</Text></View>
-      <View style={styles.actions}><Pressable onPress={() => onValue(operation)}><Text style={styles.action}>Valoriser à une date →</Text></Pressable>{compareEnabled?<Pressable onPress={() => onCompare(operation)}><Text style={styles.action}>Et si ? →</Text></Pressable>:null}</View>
+      <View style={styles.actions}><Pressable onPress={() => onValue(operation)}><Text style={styles.action}>Voir sa valeur à une date →</Text></Pressable>{compareEnabled?<Pressable onPress={() => onCompare(operation)}><Text style={styles.action}>Comparer un scénario →</Text></Pressable>:null}</View>
     </Card>)}
   </>;
 }

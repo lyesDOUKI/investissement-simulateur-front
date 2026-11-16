@@ -56,7 +56,7 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
         {result.assumptionPct !== undefined ? <Text style={styles.heroLabel}>Hypothèse transmise : {result.assumptionPct} % / an</Text> : null}
       </Card>
       <Text style={styles.resultExplanation}>Les achats sont ceux enregistrés à leurs dates d’exécution. La valeur affichée correspond à la date choisie.</Text>
-      {hasProjection ? <Card style={styles.projectionNote}><Text style={styles.projectionTitle}>Cette valorisation inclut des projections</Text><Text style={styles.warningText}>Quand aucun cours observé n’est disponible à la date demandée, le service utilise une hypothèse annuelle. Le détail par support indique les cours observés et les hypothèses appliquées.</Text></Card> : null}
+      {hasProjection ? <Card style={styles.projectionNote}><Text style={styles.projectionTitle}>Cette valorisation inclut des projections</Text><Text style={styles.warningText}>Selon le support, la valeur repose sur un cours de marché disponible ou sur une projection. Le détail indique la date du dernier cours utilisé et les hypothèses appliquées.</Text></Card> : null}
       <Pressable onPress={onDetails} accessibilityRole="button" accessibilityLabel="Ouvrir le détail des achats et des échéances" style={styles.detailsLink}>
         <View style={styles.detailsText}><Text style={styles.detailsTitle}>{operation.kind === "dca" ? "Voir le détail des échéances" : "Voir le détail du versement"}</Text><Text style={styles.meta}>{result.allocations.length} support{result.allocations.length === 1 ? "" : "s"}{operation.kind === "dca" ? ` · ${result.installmentCount} échéances` : " · parts et cours d’achat"}</Text></View>
         <Text style={styles.chevron}>›</Text>

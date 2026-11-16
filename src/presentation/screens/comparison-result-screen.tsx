@@ -57,7 +57,7 @@ function ScenarioCard({ title, scenario, isDca, highlighted = false }: {
   return <Card style={[styles.scenario, highlighted && styles.scenarioHighlighted]}>
     <View style={styles.scenarioHeader}><Text style={styles.scenarioTitle}>{title}</Text><Text style={[styles.scenarioTag, highlighted && styles.alternativeTag]}>{highlighted ? "HYPOTHÈSE" : "ENREGISTRÉ"}</Text></View>
     <Text style={styles.scenarioValue}>{euro(valuation.value)}</Text>
-    <Text style={styles.meta}>Valeur au {formatDateLabel(valuation.valuationDate)}</Text>
+    <Text style={styles.meta}>Valeur à la date cible · {formatDateLabel(valuation.valuationDate)}</Text>
     <Text style={styles.scenarioSetup}>{scenarioSetup(parameters, isDca)}</Text>
     <View style={styles.summaryRows}>
       <CompactMetric label="Capital investi" value={euro(valuation.invested)} />
@@ -88,11 +88,11 @@ function ScenarioDetails({ scenario, isDca }: { scenario: ComparisonScenario; is
         {allocation.isin ? <Text style={styles.meta}>{allocation.isin}</Text> : null}
         <SummaryMetric label="Montant placé" value={euro(allocation.invested)} />
         {allocation.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(allocation.shares)} /> : null}
-        {allocation.observedDate || allocation.observedPrice !== null ? <SummaryMetric label={`Cours observé${allocation.observedDate ? ` · ${formatDateLabel(allocation.observedDate)}` : ""}`} value={euro(allocation.observedPrice)} /> : null}
+        {allocation.observedDate || allocation.observedPrice !== null ? <SummaryMetric label={`Dernier cours disponible${allocation.observedDate ? ` · ${formatDateLabel(allocation.observedDate)}` : ""}`} value={euro(allocation.observedPrice)} /> : null}
         {allocation.averagePurchasePrice !== null ? <SummaryMetric label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
-        <SummaryMetric label="Origine du prix d’achat" value={statusLabel(allocation.purchaseStatus)} />
-        <SummaryMetric label={`Valeur au ${formatDateLabel(valuation.valuationDate)}`} value={euro(allocation.value)} />
-        <SummaryMetric label="Origine de la valorisation" value={statusLabel(allocation.status)} />
+        <SummaryMetric label="Prix d’achat obtenu avec" value={statusLabel(allocation.purchaseStatus)} />
+        <SummaryMetric label={`Valeur à la date cible · ${formatDateLabel(valuation.valuationDate)}`} value={euro(allocation.value)} />
+        <SummaryMetric label="Valeur calculée à partir de" value={statusLabel(allocation.status)} />
         <SummaryMetric label="Gain / perte" value={euro(allocation.gain)} />
         {allocation.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.assumption}>Rendement retenu : {rate(assumption)}</Text>)}
         {allocation.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.assumption}>Taux fonds euro retenu : {rate(assumption)}</Text>)}
@@ -126,9 +126,9 @@ function InstallmentCard({ installment, valuationDate }: { installment: Comparis
       <SummaryMetric label={line.status === "not-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
       {line.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(line.shares)} /> : null}
       <SummaryMetric label={`Prix à l’achat${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
-      {line.status !== "not-executed" ? <SummaryMetric label="Origine du prix d’achat" value={statusLabel(line.purchaseStatus)} /> : null}
-      <SummaryMetric label={`Valeur au ${formatDateLabel(valuationDate)}`} value={euro(line.value)} />
-      <SummaryMetric label="Origine de la valorisation" value={statusLabel(line.status)} />
+      {line.status !== "not-executed" ? <SummaryMetric label="Prix d’achat obtenu avec" value={statusLabel(line.purchaseStatus)} /> : null}
+      <SummaryMetric label={`Valeur à la date cible · ${formatDateLabel(valuationDate)}`} value={euro(line.value)} />
+      <SummaryMetric label="Valeur calculée à partir de" value={statusLabel(line.status)} />
       <SummaryMetric label="Gain / perte" value={euro(line.gain)} />
       {line.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.assumption}>Rendement retenu : {rate(assumption)}</Text>)}
       {line.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.assumption}>Taux fonds euro retenu : {rate(assumption)}</Text>)}
@@ -176,13 +176,13 @@ function StatusBadge({ status }: { status: ComparisonDataStatus }) {
 }
 
 function statusLabel(status: ComparisonDataStatus) {
-  return status === "observed" ? "Cours observé" : status === "projected" ? "Projeté" : status === "not-executed" ? "Non exécuté" : "Indisponible";
+  return status === "observed" ? "Cours du marché" : status === "projected" ? "Projection" : status === "not-executed" ? "Pas encore exécuté" : "Indisponible";
 }
 
 function installmentNatureLabel(nature: ComparisonInstallment["nature"]) {
-  if (nature === "observed") return "Observée";
-  if (nature === "projected") return "Projetée";
-  if (nature === "mixed") return "Mixte";
+  if (nature === "observed") return "Exécutée";
+  if (nature === "projected") return "Échéance projetée";
+  if (nature === "mixed") return "Partiellement projetée";
   if (nature === "not-yet-executed") return "À venir";
   return "Partielle";
 }
