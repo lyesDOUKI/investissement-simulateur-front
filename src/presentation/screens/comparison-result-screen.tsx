@@ -148,10 +148,15 @@ function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
   const details = [];
   if (isDca && parameters.executionDay !== undefined) details.push(`Prélèvement le ${parameters.executionDay} · délai ${parameters.delayBusinessDays ?? 0} jours ouvrés`);
   for (const allocation of parameters.allocations) {
-    details.push(`${allocation.name ?? allocation.isin ?? "Fonds euro"} · ${allocation.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`);
+    const amount = `${allocation.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`;
+    const annualAssumption = allocation.instrumentKind === "uc"
+      ? parameters.projectionAssumptions.find((item) => item.isin === allocation.isin)?.annualReturn
+      : parameters.euroFundAssumptions.find((item) => item.name === allocation.name)?.annualRate;
+    const assumptionLabel = annualAssumption === undefined
+      ? ""
+      : ` · ${allocation.instrumentKind === "uc" ? "hypothèse" : "taux"} ${rate(annualAssumption)}`;
+    details.push(`${allocation.name ?? allocation.isin ?? "Fonds euro"} · ${amount}${assumptionLabel}`);
   }
-  for (const assumption of parameters.projectionAssumptions) details.push(`${assumption.isin} · hypothèse ${rate(assumption.annualReturn)}`);
-  for (const assumption of parameters.euroFundAssumptions) details.push(`${assumption.name} · taux hypothétique ${rate(assumption.annualRate)}`);
   return details;
 }
 
