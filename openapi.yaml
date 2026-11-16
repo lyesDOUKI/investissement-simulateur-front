@@ -257,6 +257,65 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ApiProblem"
+  /portfolio/summary:
+    get:
+      tags:
+      - Portefeuille
+      summary: Consulter le résumé du portefeuille
+      description: Valorise les opérations du client authentifié. Le client est identifié
+        exclusivement par le claim sub du bearer JWT ; aucun clientId n'est accepté.
+      operationId: getSummary
+      parameters:
+      - name: valuationDate
+        in: query
+        description: "Date de valorisation au format ISO YYYY-MM-DD. Par défaut, la\
+          \ date du jour."
+        required: false
+        schema:
+          type: string
+          format: date
+        example: 2026-11-16
+      responses:
+        "200":
+          description: Résumé complet ou partiel valorisé par le domaine
+          content:
+            '*/*':
+              schema:
+                $ref: "#/components/schemas/PortfolioSummaryResponse"
+        "400":
+          description: valuationDate ne respecte pas ISO YYYY-MM-DD ou ne correspond
+            pas à une date valide ; erreur RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "401":
+          description: Bearer JWT absent ou invalide
+          content:
+            '*/*':
+              schema:
+                type: object
+        "403":
+          description: Le bearer JWT ne possède pas le rôle client requis
+          content:
+            '*/*':
+              schema:
+                type: object
+        "422":
+          description: La date de valorisation est future ; erreur RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+        "500":
+          description: Les données persistées du portefeuille n'ont pas pu être chargées
+            ; erreur RFC 9457
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ApiProblem"
+      security:
+      - bearerAuth: []
   /one-time-payments/{paymentId}:
     get:
       tags:
@@ -709,6 +768,211 @@ components:
       - allocations
       - amount
       - date
+    PortfolioDcaAllocationResponse:
+      type: object
+      description: Montant mensuel affecté à un support du plan DCA
+      properties:
+        instrumentKind:
+          type: string
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type:
+          - string
+          - "null"
+          description: ISIN de l'unité de compte
+        name:
+          type: string
+          description: "Nom connu du support, ou son identifiant si aucun nom n'est\
+            \ disponible"
+        monthlyAmount:
+          type: number
+          description: Montant mensuel affecté au support
+          example: 195.0
+    PortfolioDcaPlanResponse:
+      type: object
+      description: Données de configuration d'un plan DCA
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant du plan DCA
+          example: dc347a79-2909-481a-a3f3-770e5ce675b3
+        monthlyAmount:
+          type: number
+          description: Montant prélevé chaque mois
+          example: 300.0
+        configuredAt:
+          type: string
+          format: date
+          description: Date de mise en place
+          example: 2026-09-01
+        paymentDay:
+          type: integer
+          format: int32
+          description: Jour du mois prévu pour le prélèvement
+          example: 10
+        businessDayDelay:
+          type: integer
+          format: int32
+          description: Délai configuré en jours ouvrés
+          example: 3
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioDcaAllocationResponse"
+    PortfolioHoldingResponse:
+      type: object
+      description: Position agrégée par support
+      properties:
+        instrumentKind:
+          type: string
+          description: Type de support
+          enum:
+          - UNIT_LINKED
+          - EURO_FUND
+        isin:
+          type:
+          - string
+          - "null"
+          description: ISIN de l'unité de compte
+        name:
+          type: string
+          description: "Nom connu du support, ou son identifiant si aucun nom n'est\
+            \ disponible"
+        invested:
+          type: number
+          description: Capital investi sur ce support
+          example: 3100.0
+        shares:
+          type:
+          - number
+          - "null"
+          description: Parts détenues ; null si elles ne peuvent pas être déterminées
+        value:
+          type:
+          - number
+          - "null"
+          description: Valeur du support ; null si sa valorisation est indisponible
+        sharePct:
+          type:
+          - number
+          - "null"
+          description: Part de la valeur totale en pourcentage ; null si la valorisation
+            est partielle
+        status:
+          type: string
+          description: "COURS, PROJETEE ou INDISPONIBLE"
+          enum:
+          - COURS
+          - PROJETEE
+          - INDISPONIBLE
+        observedDate:
+          type:
+          - string
+          - "null"
+          format: date
+          description: "Date réelle du dernier cours utilisé, jamais postérieure à\
+            \ valuationDate"
+    PortfolioRecentActivityResponse:
+      type: object
+      description: "Activité la plus récente. Pour ONE_TIME_PAYMENT, operationId est\
+        \ l'identifiant du versement ; pour DCA_INSTALLMENT, c'est l'identifiant du\
+        \ plan DCA. Les deux identifiants ouvrent leur route GET correspondante."
+      properties:
+        type:
+          type: string
+          description: Type d'opération
+          enum:
+          - ONE_TIME_PAYMENT
+          - DCA_INSTALLMENT
+        operationId:
+          type: string
+          format: uuid
+          description: Identifiant du versement unique ou du plan DCA à ouvrir selon
+            type
+        date:
+          type: string
+          format: date
+          description: Date d'exécution enregistrée
+        amount:
+          type: number
+          description: Montant de l'opération
+        label:
+          type: string
+          description: Libellé destiné à l'affichage
+        detail:
+          type: string
+          description: Détail du nombre de supports
+    PortfolioSummaryResponse:
+      type: object
+      description: Résumé du portefeuille valorisé à la date demandée
+      properties:
+        valuationDate:
+          type: string
+          format: date
+          description: Date de référence de la valorisation
+          example: 2026-11-16
+        currency:
+          type: string
+          description: Devise de tous les montants
+          example: EUR
+        valuationStatus:
+          type: string
+          description: "COMPLETE si toutes les lignes sont valorisées, PARTIAL sinon"
+          enum:
+          - COMPLETE
+          - PARTIAL
+        totals:
+          $ref: "#/components/schemas/PortfolioSummaryTotals"
+        holdings:
+          type: array
+          description: Répartition par support détenu à la date de référence
+          items:
+            $ref: "#/components/schemas/PortfolioHoldingResponse"
+        dcaPlans:
+          type: array
+          description: Plans DCA configurés à la date de référence
+          items:
+            $ref: "#/components/schemas/PortfolioDcaPlanResponse"
+        recentActivity:
+          type: "null"
+          $ref: "#/components/schemas/PortfolioRecentActivityResponse"
+          description: Activité enregistrée la plus récente à la date de référence
+    PortfolioSummaryTotals:
+      type: object
+      description: Totaux calculés par le domaine
+      properties:
+        invested:
+          type: number
+          description: Capital effectivement investi à la date de valorisation
+          example: 5400.0
+        value:
+          type:
+          - number
+          - "null"
+          description: "Valeur totale en COMPLETE ; en PARTIAL, somme des lignes disponibles.\
+            \ Null si aucune ligne ne peut être valorisée"
+          example: 5600.0
+        gain:
+          type:
+          - number
+          - "null"
+          description: Gain ou perte ; null si la valorisation est partielle
+          example: 200.0
+        gainRatePct:
+          type:
+          - number
+          - "null"
+          description: Gain ou perte en pourcentage ; null si la valorisation est
+            partielle
+          example: 3.7037
+        oneTimeInvested:
+          type: number
+          description: Capital provenant des versements ponctuels exécutés à cette
+            date
+          example: 2500.0
     OneTimePaymentAllocationResponse:
       type: object
       description: Ligne persistée d'un versement. Les champs spécifiques à l'autre

@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: p.forest, borderColor: p.forest, gap: 10, marginBottom: 8 }, heroLabel: { color: p.onForest, fontSize: 12 }, heroValue: { color: p.onForest, fontSize: 38, fontWeight: "700", letterSpacing: -0.8 }, heroGain: { color: p.mint, fontSize: 14, fontWeight: "700" },
   resultExplanation: { color: p.muted, fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 10 },
   detailsLink: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 68, padding: 15, backgroundColor: p.paper, borderColor: p.line, borderWidth: 1, borderRadius: 18, marginBottom: 10 }, detailsText: { flex: 1, gap: 4 }, detailsTitle: { color: p.forestLight, fontSize: 14, fontWeight: "700" }, chevron: { color: p.forestLight, fontSize: 26, fontWeight: "500" },
-  warning: { backgroundColor: p.warning, marginTop: 6 }, warningText: { color: p.warningText, fontSize: 12, lineHeight: 18 },
-  projectionNote: { backgroundColor: p.warning, marginTop: 6 }, projectionTitle: { color: p.warningText, fontSize: 13, fontWeight: "700" },
+  warning: { backgroundColor: p.warning, marginTop: 6 }, warningText: { color: p.warningText, fontSize: 12, lineHeight: 18},
+  projectionNote: { backgroundColor: p.warning, marginTop: 6, marginBottom: 16 }, projectionTitle: { color: p.warningText, fontSize: 13, fontWeight: "700" },
   error: { color: p.red, fontSize: 13, lineHeight: 18 }, disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 4, marginBottom: 8 },
 });
