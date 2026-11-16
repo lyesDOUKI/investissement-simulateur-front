@@ -486,6 +486,13 @@ components:
         executionDate:
           type: string
           format: date
+        nature:
+          type: string
+          enum:
+          - OBSERVED
+          - PROJECTED
+          - MIXED
+          - NOT_YET_EXECUTED
         amount:
           type: number
         allocations:
@@ -511,6 +518,12 @@ components:
         amount:
           type: number
           description: Montant affecté à cet achat en euros
+        value:
+          type: number
+          description: Valeur de cet achat à la date de valorisation en euros
+        gain:
+          type: number
+          description: Gain ou perte de cet achat à la date de valorisation en euros
         shares:
           type: number
           description: Nombre de parts acquises pour une unité de compte
@@ -527,6 +540,14 @@ components:
           enum:
           - COURS
           - PROJETEE
+        annualReturn:
+          type: number
+          description: Hypothèse annualReturn appliquée au prix d'achat projeté
+          example: 0.05
+        annualRate:
+          type: number
+          description: Taux annuel du fonds euro appliqué à la valorisation projetée
+          example: 0.03
     DcaValuationResponse:
       type: object
       description: Calcul détaillé de valorisation d'un plan DCA
@@ -640,6 +661,17 @@ components:
           enum:
           - COURS
           - PROJETEE
+        annualReturns:
+          type: array
+          description: Hypothèses annualReturn utilisées pour projeter les lignes
+            de ce support
+          items:
+            type: number
+        annualRates:
+          type: array
+          description: Taux annuels de fonds euro utilisés pour les lignes projetées
+          items:
+            type: number
     RecordDcaInvestmentRequest:
       type: object
       description: Création d'un plan d'investissement programmé
