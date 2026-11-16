@@ -1,10 +1,12 @@
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { ComparisonDataStatus, ComparisonInstallment, ComparisonParameters, ComparisonScenario, InvestmentComparison, Operation } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, SectionTitle } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 
 const euro = (value: number | null) => value === null ? "Indisponible" : `${value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const signedEuro = (value: number | null) => value === null ? "Indisponible" : `${value > 0 ? "+" : ""}${euro(value)}`;
 const units = (value: number | null) => value === null ? "—" : value.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
 const rate = (value: number) => `${(value * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} % / an`;
 
@@ -16,22 +18,30 @@ export function ComparisonResultScreen({ operation, result, onAdjust }: {
   const wide = useWindowDimensions().width >= 760;
   const isDca = operation.kind === "dca";
   return <>
-    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle={`Même date pour A et B : ${formatDateLabel(result.valuationDate)}. Voyez comment les paramètres modifient le résultat.`} />
-    {result.valuationStatus === "partial" ? <Card style={styles.partial}><Text style={styles.partialTitle}>Comparaison partielle</Text><Text style={styles.meta}>Au moins un support n’a pas pu être valorisé complètement. Les valeurs et écarts indisponibles sont indiqués comme tels.</Text></Card> : null}
+    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle="A et B sont valorisés à la même date. Commencez par l’écart, puis ouvrez les détails si vous voulez comprendre ce qui le compose." />
+
+    <Card style={styles.resultCard}>
+      <Text style={styles.resultEyebrow}>ÉCART · B − A</Text>
+      <Text style={styles.resultLabel}>Différence de valeur au {formatDateLabel(result.valuationDate)}</Text>
+      <Text style={styles.resultValue}>{signedEuro(result.difference.value)}</Text>
+      {result.valuationStatus === "partial" ? <Text style={styles.partialNote}>Comparaison partielle : certaines données de valorisation manquent. Les écarts indisponibles restent indiqués comme tels.</Text> : null}
+      <View style={styles.metrics}>
+        <DifferenceMetric label="Capital investi" value={result.difference.invested} />
+        <View style={styles.metricDivider} />
+        <DifferenceMetric label="Écart de gain" value={result.difference.gain} />
+        <View style={styles.metricDivider} />
+        <DifferenceMetric label="Écart de rendement" value={result.difference.gainRatePercentagePoints} suffix=" pts" />
+      </View>
+    </Card>
+    <View style={styles.topAction}><ActionButton label="Modifier les hypothèses" tone="light" onPress={onAdjust} /></View>
+
+    <SectionTitle title="Les deux scénarios" action={<Text style={styles.commonDate}>Même date · {formatDateLabel(result.valuationDate)}</Text>} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
       <ScenarioCard title={`A · ${isDca ? "Plan de référence" : "Versement de référence"}`} scenario={result.original} isDca={isDca} />
       <ScenarioCard title={`B · ${isDca ? "Plan alternatif" : "Versement alternatif"}`} scenario={result.alternative} isDca={isDca} highlighted />
     </View>
-    <SectionTitle title="Écart · B par rapport à A" />
-    <Card style={styles.difference}>
-      <DifferenceRow label="Capital investi" value={result.difference.invested} />
-      <DifferenceRow label="Valeur à cette date" value={result.difference.value} />
-      <DifferenceRow label="Écart de gain" value={result.difference.gain} />
-      <DifferenceRow label="Écart de rendement" value={result.difference.gainRatePercentagePoints} suffix=" points" />
-      <Text style={styles.hint}>Les écarts sont calculés par le service comme B moins A. Ils décrivent les hypothèses comparées et ne prédisent pas les performances futures.</Text>
-    </Card>
-    <Text style={styles.disclaimer}>Le scénario B n’est pas ajouté à votre journal. Aucun ordre n’est transmis au courtier.</Text>
-    <View style={styles.footer}><ActionButton label="Modifier les hypothèses" tone="light" onPress={onAdjust} /></View>
+
+    <Text style={styles.disclaimer}>Le scénario B reste une hypothèse : il n’est pas ajouté à votre journal et aucun ordre n’est transmis au courtier.</Text>
   </>;
 }
 
@@ -41,40 +51,70 @@ function ScenarioCard({ title, scenario, isDca, highlighted = false }: {
   isDca: boolean;
   highlighted?: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const valuation = scenario.valuation;
-  const details = parameterDetails(scenario.parameters, isDca);
+  const parameters = scenario.parameters;
   return <Card style={[styles.scenario, highlighted && styles.scenarioHighlighted]}>
-    <Text style={styles.scenarioTitle}>{title}</Text>
-    {details.map((detail, index) => <Text key={`${detail}-${index}`} style={styles.meta}>{detail}</Text>)}
-    <View style={styles.rule} />
-    <Text style={styles.value}>{euro(valuation.value)}</Text>
+    <View style={styles.scenarioHeader}><Text style={styles.scenarioTitle}>{title}</Text><Text style={[styles.scenarioTag, highlighted && styles.alternativeTag]}>{highlighted ? "HYPOTHÈSE" : "ENREGISTRÉ"}</Text></View>
+    <Text style={styles.scenarioValue}>{euro(valuation.value)}</Text>
     <Text style={styles.meta}>Valeur au {formatDateLabel(valuation.valuationDate)}</Text>
-    <View style={styles.rule} />
-    <DifferenceRow label="Capital investi" value={valuation.invested} />
-    <DifferenceRow label="Gain / perte" value={valuation.gain} />
-    <DifferenceRow label="Rendement" value={valuation.gainRatePct} suffix=" %" />
-    {isDca ? <Text style={styles.meta}>{valuation.installments.length} échéances retournées par le service</Text> : null}
-    {valuation.allocations.map((allocation, index) => <View key={`${allocation.instrumentKind}-${allocation.isin ?? allocation.name}-${index}`} style={styles.allocation}>
-      <View style={styles.allocationHeader}><Text style={styles.allocationTitle}>{allocation.name ?? allocation.isin ?? "Fonds euro"}</Text><StatusBadge status={allocation.status} /></View>
-      {allocation.isin ? <Text style={styles.meta}>{allocation.isin}</Text> : null}
-      <View style={styles.allocationRows}>
-        <Row label="Montant placé sur ce support" value={euro(allocation.invested)} />
-        {allocation.instrumentKind === "uc" ? <Row label="Parts acquises au total" value={units(allocation.shares)} /> : null}
-        {allocation.observedDate || allocation.observedPrice !== null ? <Row label={`Cours observé${allocation.observedDate ? " · " + formatDateLabel(allocation.observedDate) : ""}`} value={euro(allocation.observedPrice)} /> : null}
-        {allocation.averagePurchasePrice !== null ? <Row label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
-        <Row label="Origine du prix d’achat" value={statusLabel(allocation.purchaseStatus)} />
-        <Row label={`Valeur au ${formatDateLabel(valuation.valuationDate)}`} value={euro(allocation.value)} />
-        <Row label="Origine de la valorisation" value={statusLabel(allocation.status)} />
-        <Row label="Gain / perte" value={euro(allocation.gain)} />
-        {allocation.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.meta}>Hypothèse de rendement : {rate(assumption)}</Text>)}
-        {allocation.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.meta}>Hypothèse fonds euro : {rate(assumption)}</Text>)}
-      </View>
-    </View>)}
-    {isDca && valuation.installments.length > 0 ? <View style={styles.installments}>
-      <Text style={styles.installmentHeading}>Détail des échéances</Text>
-      {valuation.installments.map((installment, index) => <InstallmentCard key={`${installment.dueDate}-${installment.executionDate}-${index}`} installment={installment} valuationDate={valuation.valuationDate} />)}
-    </View> : null}
+    <Text style={styles.scenarioSetup}>{scenarioSetup(parameters, isDca)}</Text>
+    <View style={styles.summaryRows}>
+      <CompactMetric label="Capital investi" value={euro(valuation.invested)} />
+      <CompactMetric label="Gain / perte" value={euro(valuation.gain)} />
+    </View>
+    <Pressable onPress={() => setExpanded((value) => !value)} accessibilityRole="button" accessibilityState={{ expanded }} style={styles.disclosure}>
+      <Text style={styles.disclosureText}>{expanded ? "Masquer les détails" : "Voir les paramètres et supports"}</Text>
+      <Text style={styles.disclosureIcon}>{expanded ? "−" : "+"}</Text>
+    </Pressable>
+    {expanded ? <ScenarioDetails scenario={scenario} isDca={isDca} /> : null}
   </Card>;
+}
+
+function ScenarioDetails({ scenario, isDca }: { scenario: ComparisonScenario; isDca: boolean }) {
+  const valuation = scenario.valuation;
+  const parameters = scenario.parameters;
+  return <View style={styles.details}>
+    <View style={styles.detailSection}>
+      <Text style={styles.detailHeading}>Paramètres utilisés</Text>
+      {parameterDetails(parameters, isDca).map((detail, index) => <Text key={`${detail}-${index}`} style={styles.meta}>{detail}</Text>)}
+      <SummaryMetric label="Gain / perte (%)" value={valuation.gainRatePct === null ? "Indisponible" : `${valuation.gainRatePct.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`} />
+    </View>
+
+    {valuation.allocations.length > 0 ? <View style={styles.detailSection}>
+      <Text style={styles.detailHeading}>Résultat par support</Text>
+      {valuation.allocations.map((allocation, index) => <View key={`${allocation.instrumentKind}-${allocation.isin ?? allocation.name}-${index}`} style={styles.allocation}>
+        <View style={styles.allocationHeader}><Text style={styles.allocationTitle}>{allocation.name ?? allocation.isin ?? "Fonds euro"}</Text><StatusBadge status={allocation.status} /></View>
+        {allocation.isin ? <Text style={styles.meta}>{allocation.isin}</Text> : null}
+        <SummaryMetric label="Montant placé" value={euro(allocation.invested)} />
+        {allocation.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(allocation.shares)} /> : null}
+        {allocation.observedDate || allocation.observedPrice !== null ? <SummaryMetric label={`Cours observé${allocation.observedDate ? ` · ${formatDateLabel(allocation.observedDate)}` : ""}`} value={euro(allocation.observedPrice)} /> : null}
+        {allocation.averagePurchasePrice !== null ? <SummaryMetric label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
+        <SummaryMetric label="Origine du prix d’achat" value={statusLabel(allocation.purchaseStatus)} />
+        <SummaryMetric label={`Valeur au ${formatDateLabel(valuation.valuationDate)}`} value={euro(allocation.value)} />
+        <SummaryMetric label="Origine de la valorisation" value={statusLabel(allocation.status)} />
+        <SummaryMetric label="Gain / perte" value={euro(allocation.gain)} />
+        {allocation.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.assumption}>Rendement retenu : {rate(assumption)}</Text>)}
+        {allocation.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.assumption}>Taux fonds euro retenu : {rate(assumption)}</Text>)}
+      </View>)}
+    </View> : null}
+
+    {isDca && valuation.installments.length > 0 ? <InstallmentsDisclosure installments={valuation.installments} valuationDate={valuation.valuationDate} /> : null}
+  </View>;
+}
+
+function InstallmentsDisclosure({ installments, valuationDate }: { installments: ComparisonScenario["valuation"]["installments"]; valuationDate: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return <View style={styles.detailSection}>
+    <Pressable onPress={() => setExpanded((value) => !value)} accessibilityRole="button" accessibilityState={{ expanded }} style={styles.installmentsToggle}>
+      <View style={styles.installmentToggleText}>
+        <Text style={styles.detailHeading}>Échéances DCA</Text>
+        <Text style={styles.meta}>{installments.length} échéance{installments.length === 1 ? "" : "s"} détaillée{installments.length === 1 ? "" : "s"}</Text>
+      </View>
+      <Text style={styles.disclosureText}>{expanded ? "Masquer" : "Afficher"}</Text>
+    </Pressable>
+    {expanded ? installments.map((installment, index) => <InstallmentCard key={`${installment.dueDate}-${installment.executionDate}-${index}`} installment={installment} valuationDate={valuationDate} />) : null}
+  </View>;
 }
 
 function InstallmentCard({ installment, valuationDate }: { installment: ComparisonInstallment; valuationDate: string }) {
@@ -83,25 +123,29 @@ function InstallmentCard({ installment, valuationDate }: { installment: Comparis
     <Text style={styles.meta}>{installment.executionDate ? `Exécution : ${formatDateLabel(installment.executionDate)}` : "Date d’exécution non renseignée"} · {euro(installment.amount)} au total</Text>
     {installment.allocations.map((line, lineIndex) => <View key={`${line.instrumentKind}-${line.isin ?? line.name}-${lineIndex}`} style={styles.installmentSupport}>
       <View style={styles.allocationHeader}><Text style={styles.allocationTitle}>{line.isin ?? line.name ?? "Fonds euro"}</Text><StatusBadge status={line.status} /></View>
-      <Row label={line.status === "not-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
-      {line.instrumentKind === "uc" ? <Row label="Parts acquises" value={units(line.shares)} /> : null}
-      <Row label={`Prix à l’achat${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
-      {line.status !== "not-executed" ? <Row label="Origine du prix d’achat" value={statusLabel(line.purchaseStatus)} /> : null}
-      <Row label={`Valeur au ${formatDateLabel(valuationDate)}`} value={euro(line.value)} />
-      <Row label="Origine de la valorisation" value={statusLabel(line.status)} />
-      <Row label="Gain / perte" value={euro(line.gain)} />
-      {line.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.meta}>Hypothèse de rendement : {rate(assumption)}</Text>)}
-      {line.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.meta}>Hypothèse fonds euro : {rate(assumption)}</Text>)}
+      <SummaryMetric label={line.status === "not-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
+      {line.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(line.shares)} /> : null}
+      <SummaryMetric label={`Prix à l’achat${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
+      {line.status !== "not-executed" ? <SummaryMetric label="Origine du prix d’achat" value={statusLabel(line.purchaseStatus)} /> : null}
+      <SummaryMetric label={`Valeur au ${formatDateLabel(valuationDate)}`} value={euro(line.value)} />
+      <SummaryMetric label="Origine de la valorisation" value={statusLabel(line.status)} />
+      <SummaryMetric label="Gain / perte" value={euro(line.gain)} />
+      {line.annualReturns.map((assumption, assumptionIndex) => <Text key={`return-${assumptionIndex}`} style={styles.assumption}>Rendement retenu : {rate(assumption)}</Text>)}
+      {line.annualRates.map((assumption, assumptionIndex) => <Text key={`rate-${assumptionIndex}`} style={styles.assumption}>Taux fonds euro retenu : {rate(assumption)}</Text>)}
     </View>)}
   </View>;
 }
 
-function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
-  const details = [];
+function scenarioSetup(parameters: ComparisonParameters, isDca: boolean) {
   const date = isDca ? parameters.configuredAt : parameters.date;
   const amount = isDca ? parameters.monthlyAmount : parameters.amount;
-  if (date) details.push(`${isDca ? "Mis en place le" : "Exécuté le"} ${formatDateLabel(date)}`);
-  if (amount !== undefined) details.push(`${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`);
+  const amountLabel = amount === undefined ? "Montant non précisé" : `${amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`;
+  if (!date) return amountLabel;
+  return `${isDca ? "Mis en place" : "Exécuté"} le ${formatDateLabel(date)} · ${amountLabel}`;
+}
+
+function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
+  const details = [];
   if (isDca && parameters.executionDay !== undefined) details.push(`Prélèvement le ${parameters.executionDay} · délai ${parameters.delayBusinessDays ?? 0} jours ouvrés`);
   for (const allocation of parameters.allocations) {
     details.push(`${allocation.name ?? allocation.isin ?? "Fonds euro"} · ${allocation.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`);
@@ -109,6 +153,18 @@ function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
   for (const assumption of parameters.projectionAssumptions) details.push(`${assumption.isin} · hypothèse ${rate(assumption.annualReturn)}`);
   for (const assumption of parameters.euroFundAssumptions) details.push(`${assumption.name} · taux hypothétique ${rate(assumption.annualRate)}`);
   return details;
+}
+
+function DifferenceMetric({ label, value, suffix = " €" }: { label: string; value: number | null; suffix?: string }) {
+  return <View style={styles.differenceMetric}><Text style={styles.differenceMetricLabel}>{label}</Text><Text style={styles.differenceMetricValue}>{value === null ? "—" : `${value > 0 ? "+" : ""}${value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${suffix}`}</Text></View>;
+}
+
+function SummaryMetric({ label, value }: { label: string; value: string }) {
+  return <View style={styles.summaryMetric}><Text style={styles.meta}>{label}</Text><Text style={styles.summaryValue}>{value}</Text></View>;
+}
+
+function CompactMetric({ label, value }: { label: string; value: string }) {
+  return <View style={styles.compactMetric}><Text style={styles.compactLabel}>{label}</Text><Text style={styles.compactValue}>{value}</Text></View>;
 }
 
 function StatusBadge({ status }: { status: ComparisonDataStatus }) {
@@ -128,18 +184,20 @@ function installmentNatureLabel(nature: ComparisonInstallment["nature"]) {
   return "Partielle";
 }
 
-function Row({ label, value }: { label: string; value: string }) {
-  return <View style={styles.row}><Text style={styles.meta}>{label}</Text><Text style={styles.rowValue}>{value}</Text></View>;
-}
-
-function DifferenceRow({ label, value, suffix = " €" }: { label: string; value: number | null; suffix?: string }) {
-  return <View style={styles.row}><Text style={styles.meta}>{label}</Text><Text style={styles.rowValue}>{value === null ? "Indisponible" : `${value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${suffix}`}</Text></View>;
-}
-
 const styles = StyleSheet.create({
-  scenarios: { gap: 12 }, scenariosWide: { flexDirection: "row", alignItems: "stretch" }, scenario: { flex: 1, gap: 9 }, scenarioHighlighted: { borderColor: p.forestLight, borderWidth: 1.5 },
-  scenarioTitle: { color: p.ink, fontSize: 15, fontWeight: "700" }, value: { color: p.forestLight, fontSize: 29, fontWeight: "700", letterSpacing: -0.5 }, meta: { color: p.muted, fontSize: 12, lineHeight: 17 }, rule: { height: 1, backgroundColor: p.line, marginVertical: 4 },
-  row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }, rowValue: { color: p.ink, fontSize: 12, fontWeight: "700" }, allocation: { gap: 4, borderTopWidth: 1, borderColor: p.line, paddingTop: 8 }, allocationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, allocationTitle: { color: p.ink, fontSize: 13, fontWeight: "700", flex: 1 }, allocationRows: { gap: 5, marginTop: 3 },
-  installments: { gap: 8, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 }, installmentHeading: { color: p.ink, fontSize: 12, fontWeight: "700" }, installment: { gap: 5, paddingLeft: 8, borderLeftWidth: 2, borderColor: p.forestLight }, installmentDate: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, installmentSupport: { gap: 5, marginTop: 3, paddingTop: 7, borderTopWidth: 1, borderColor: p.line },
-  badge: { overflow: "hidden", paddingVertical: 4, paddingHorizontal: 7, borderRadius: 12, color: p.ink, fontSize: 10, fontWeight: "700" }, observedBadge: { backgroundColor: p.softGreen }, projectedBadge: { backgroundColor: p.warning }, missingBadge: { backgroundColor: p.line }, difference: { backgroundColor: p.softGreen, gap: 13 }, hint: { color: p.forestLight, fontSize: 11, lineHeight: 16, marginTop: 2 }, disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 14 }, footer: { marginTop: 16 }, partial: { backgroundColor: p.warning, gap: 5, marginBottom: 12 }, partialTitle: { color: p.warningText, fontSize: 13, fontWeight: "700" },
+  resultCard: { gap: 9, backgroundColor: p.forest, borderColor: p.forest, marginBottom: 5 },
+  resultEyebrow: { color: p.mint, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
+  resultLabel: { color: p.onForest, fontSize: 13, fontWeight: "600" },
+  resultValue: { color: p.onForest, fontSize: 34, fontWeight: "800", letterSpacing: -0.7, marginTop: 1 },
+  partialNote: { color: p.warningText, fontSize: 11, lineHeight: 16 },
+  metrics: { flexDirection: "row", alignItems: "stretch", marginTop: 6, paddingTop: 12, borderTopWidth: 1, borderColor: "#46695C" },
+  differenceMetric: { flex: 1, gap: 4, paddingHorizontal: 8 }, differenceMetricLabel: { color: "#B6C9BF", fontSize: 10, lineHeight: 14 }, differenceMetricValue: { color: p.onForest, fontSize: 12, fontWeight: "700" }, metricDivider: { width: 1, backgroundColor: "#46695C" },
+  commonDate: { color: p.forestLight, fontSize: 11, fontWeight: "600" }, scenarios: { gap: 10 }, scenariosWide: { flexDirection: "row", alignItems: "flex-start" },
+  scenario: { flex: 1, gap: 7 }, scenarioHighlighted: { borderColor: p.forestLight, borderWidth: 1.5 }, scenarioHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, scenarioTitle: { color: p.ink, fontSize: 14, fontWeight: "700", flex: 1 }, scenarioTag: { color: p.muted, fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }, alternativeTag: { color: p.forestLight }, scenarioValue: { color: p.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5, marginTop: 2 }, scenarioSetup: { color: p.muted, fontSize: 11, lineHeight: 16 },
+  summaryRows: { flexDirection: "row", gap: 8, marginTop: 2 }, summaryMetric: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }, summaryValue: { color: p.ink, fontSize: 11, fontWeight: "700", textAlign: "right" }, compactMetric: { flex: 1, gap: 3, padding: 8, borderRadius: 10, backgroundColor: p.surfaceSubtle }, compactLabel: { color: p.muted, fontSize: 10 }, compactValue: { color: p.ink, fontSize: 12, fontWeight: "700" },
+  disclosure: { minHeight: 42, marginTop: 3, paddingTop: 8, borderTopWidth: 1, borderColor: p.line, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, disclosureText: { color: p.forestLight, fontSize: 12, fontWeight: "700" }, disclosureIcon: { color: p.forestLight, fontSize: 20, fontWeight: "500" },
+  details: { gap: 14, paddingTop: 5 }, detailSection: { gap: 7, borderTopWidth: 1, borderColor: p.line, paddingTop: 10 }, detailHeading: { color: p.ink, fontSize: 12, fontWeight: "700" }, allocation: { gap: 6, paddingTop: 9, borderTopWidth: 1, borderColor: p.line }, allocationHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, allocationTitle: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, meta: { color: p.muted, fontSize: 11, lineHeight: 16 }, assumption: { color: p.muted, fontSize: 11, lineHeight: 16 },
+  installmentsToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, installmentToggleText: { gap: 2 }, installment: { gap: 6, padding: 10, borderRadius: 12, backgroundColor: p.surfaceSubtle, marginTop: 4 }, installmentDate: { color: p.ink, fontSize: 12, fontWeight: "700", flex: 1 }, installmentSupport: { gap: 6, paddingTop: 8, borderTopWidth: 1, borderColor: p.line },
+  badge: { overflow: "hidden", paddingVertical: 4, paddingHorizontal: 7, borderRadius: 12, color: p.ink, fontSize: 9, fontWeight: "700" }, observedBadge: { backgroundColor: p.softGreen }, projectedBadge: { backgroundColor: p.warning }, missingBadge: { backgroundColor: p.line },
+  topAction: { marginTop: 9 }, disclaimer: { color: p.muted, fontSize: 11, lineHeight: 16, marginTop: 15 },
 });
