@@ -16,7 +16,7 @@ export class DevTokenClient {
     const token: string = data.access_token;
     this.token = token;
     const claims = JSON.parse(decodePayload(token));
-    return { id: claims.sub ?? "local-user", firstName: claims.given_name ?? "Jean", lastName: claims.family_name ?? "Dupont", email: claims.email ?? "", phone: "Non fourni par le token", createdAt: "Non fournie par le token" };
+    return { id: claims.sub ?? "local-user", firstName: claims.given_name ?? "Jean", lastName: claims.family_name ?? "Dupont", email: claims.email ?? "", phone: claims.phone ?? "",createdAt: claims.createdAt ?? "" };
   }
   clear() { this.token = null; }
 }
