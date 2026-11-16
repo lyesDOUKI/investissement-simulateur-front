@@ -45,6 +45,8 @@ export function ScenarioFormScreen(props: {
     .reduce<string[]>((unique, line) => unique.includes(line.isin) ? unique : [...unique, line.isin], []);
   const supportName = (isin: string) => securities.find((security) => security.isin === isin)?.shortName
     ?? [...operation.allocations, ...lines].find((line) => line.isin === isin)?.name ?? isin;
+  const supportSymbol = (isin: string) => [...operation.allocations, ...lines].find((line) => line.isin === isin)?.symbol
+    ?? securities.find((security) => security.isin === isin)?.symbol ?? null;
 
   return <>
     <PageHeading eyebrow="Comparaison · paramètres" title="Construire l’autre scénario" subtitle="Choisissez une date cible commune, puis modifiez les paramètres du scénario B. Votre opération reste le scénario A de référence." />
@@ -61,7 +63,7 @@ export function ScenarioFormScreen(props: {
       <Text style={styles.referenceMeta}>{operation.kind === "dca" ? "Versements réguliers · " + totalLabel(operation.amount) + " / mois" : "Versement · " + totalLabel(operation.amount)}</Text>
       <Text style={styles.referenceMeta}>Début : {formatDateLabel(operation.date)}</Text>
       {operation.kind === "dca" ? <Text style={styles.referenceMeta}>Prélèvement le {operation.executionDay} · délai {operation.delayBusinessDays} jours ouvrés</Text> : null}
-      <View style={styles.referenceLines}>{operation.allocations.map((line) => <Text key={line.id} style={styles.referenceMeta}>• {line.name ?? line.isin} · {totalLabel(line.amount)}</Text>)}</View>
+      <View style={styles.referenceLines}>{operation.allocations.map((line) => <Text key={line.id} style={styles.referenceMeta}>• {line.symbol ? `${line.symbol} · ` : ""}{line.name ?? line.isin} · {totalLabel(line.amount)}</Text>)}</View>
     </Card>
 
     <Card style={styles.card}>
@@ -113,7 +115,10 @@ export function ScenarioFormScreen(props: {
         const inA = operation.allocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const inB = lines.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const scenarios = inA && inB ? "A et B" : inA ? "A" : "B";
-        return <TextField key={isin} label={`${supportName(isin)} · ${isin} · Scénario ${scenarios}`} value={props.assumptions[isin] ?? ""}
+        const symbol = supportSymbol(isin);
+        const support = supportName(isin);
+        const label = `${support}${symbol && symbol !== support ? ` · ${symbol}` : ""} · ISIN ${isin} · Scénario ${scenarios}`;
+        return <TextField key={isin} label={label} value={props.assumptions[isin] ?? ""}
           onChangeText={(value) => props.onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" placeholder="Ex. 6" />;
       })}
       <Text style={styles.helper}>Le fonds euro conserve le taux de l’adapter ; aucune hypothèse n’est à saisir pour lui.</Text>

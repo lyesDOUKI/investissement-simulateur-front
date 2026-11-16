@@ -58,6 +58,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
       holdings: (summary.holdings ?? []).map((holding: AnyObject) => ({
         instrumentKind: holding.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
         isin: holding.isin ?? null,
+        symbol: holding.symbol ?? null,
         name: holding.name ?? holding.isin ?? "Support",
         invested: holding.invested ?? 0,
         shares: holding.shares ?? null,
@@ -91,15 +92,15 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const plans = await this.request("/dca-investments?page=0&size=100"); const d = (plans.items ?? []).find((x: AnyObject) => x.id === id); if (d) return this.plan(d);
     throw new Error("Cette opération n’apparaît plus dans votre journal.");
   }
-  private allocation(a: AnyObject, i: number) { return { id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.euroFundName, amount: a.amount ?? 0 }; }
+  private allocation(a: AnyObject, i: number) { return { id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.euroFundName, amount: a.amount ?? 0 }; }
   private payment(x: AnyObject): Operation { return { id: x.id, kind: "versement", label: "Versement réalisé", amount: x.amount, date: dateLocal(x.executionDate), detail: "Versement enregistré", allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
   private plan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
-  private summaryPlan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount ?? 0, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => ({ id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name, amount: a.monthlyAmount ?? 0 })) }; }
+  private summaryPlan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount ?? 0, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => ({ id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.name, amount: a.monthlyAmount ?? 0 })) }; }
   private valuation(x: AnyObject, kind: Operation["kind"]): InvestmentValuation {
-    const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
+    const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
     const installments = (x.installments ?? []).map((i: AnyObject) => ({
       dueDate: dateLocal(i.dueDate), executionDate: dateLocal(i.executionDate), nature: installmentNature(i.nature), amount: i.amount,
-      allocations: (i.allocations ?? []).map((a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", name: a.name ?? a.euroFundName ?? "Fonds euro", amount: a.amount ?? 0, shares: a.shares ?? null, value: a.value, gain: a.gain, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: valuationStatus(a.status), annualReturn: a.annualReturn, annualRate: a.annualRate })),
+      allocations: (i.allocations ?? []).map((a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.name ?? a.euroFundName ?? (a.instrumentKind === "EURO_FUND" ? "Fonds euro" : a.symbol ?? a.isin ?? "Support"), amount: a.amount ?? 0, shares: a.shares ?? null, value: a.value, gain: a.gain, purchasePrice: a.purchasePrice, purchasePriceDate: dateLocal(a.purchasePriceDate), status: valuationStatus(a.status), annualReturn: a.annualReturn, annualRate: a.annualRate })),
     }));
     const allocations: InvestmentValuation["allocations"] = (x.allocations ?? []).map(allocation);
     return { operationId: x.operationId, valuationDate: dateLocal(x.valuationDate), invested: x.invested, value: x.value, gain: x.gain, gainRatePct: x.gainRatePct, installmentCount: installments.length, installments: kind === "dca" ? installments : [], allocations, hasMissingPrices: allocations.some((a) => a.status === "missing") || installments.some((i: InvestmentValuation["installments"][number]) => i.allocations.some((a) => a.status === "missing")) };
@@ -156,10 +157,11 @@ export class HttpPortfolioRepository implements PortfolioRepository {
         allocations: (parameters.allocations ?? []).map((allocation: AnyObject) => ({
           instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
           isin: allocation.isin ?? null,
+          symbol: allocation.symbol ?? null,
           name: allocation.name ?? null,
           amount: allocation.amount ?? 0,
         })),
-        projectionAssumptions: (parameters.projectionAssumptions ?? []).map((assumption: AnyObject) => ({ isin: assumption.isin, annualReturn: assumption.annualReturn })),
+        projectionAssumptions: (parameters.projectionAssumptions ?? []).map((assumption: AnyObject) => ({ isin: assumption.isin, symbol: assumption.symbol ?? null, annualReturn: assumption.annualReturn })),
       },
       valuation: {
         valuationDate: dateLocal(x.valuation?.valuationDate),
@@ -170,6 +172,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
         allocations: (x.valuation?.allocations ?? []).map((allocation: AnyObject) => ({
           instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
           isin: allocation.isin ?? null,
+          symbol: allocation.symbol ?? null,
           name: allocation.name ?? null,
           invested: allocation.invested ?? 0,
           shares: allocation.shares ?? null,
@@ -191,6 +194,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
           allocations: (installment.allocations ?? []).map((allocation: AnyObject) => ({
             instrumentKind: allocation.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const,
             isin: allocation.isin ?? null,
+            symbol: allocation.symbol ?? null,
             name: allocation.name ?? null,
             amount: allocation.amount ?? 0,
             shares: allocation.shares ?? null,

@@ -19,7 +19,7 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
     return target > now;
   };
   const future = isFutureDate(date);
-  const supports = [...new Set(operation.allocations.filter((allocation) => allocation.instrumentKind === "uc" && allocation.isin).map((allocation) => allocation.isin))];
+  const supports = operation.allocations.filter((allocation, index, all) => allocation.instrumentKind === "uc" && allocation.isin && all.findIndex((item) => item.instrumentKind === "uc" && item.isin === allocation.isin) === index);
   const hasProjection = result?.allocations.some((allocation) => allocation.status === "projected")
     || result?.installments.some((installment) => installment.nature === "projected" || installment.nature === "mixed" || installment.allocations.some((allocation) => allocation.status === "projected"));
 
@@ -37,7 +37,11 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
       {future && supports.length > 0 ? <View style={styles.assumptions}>
         <Text style={styles.parametersTitle}>Hypothèses de rendement</Text>
         <Text style={styles.meta}>Une hypothèse par support UC. Elle ne s’applique que si le service doit projeter un cours futur.</Text>
-        {supports.map((isin) => <TextField key={isin} label={isin} value={assumptions[isin] ?? "5"} onChangeText={(value) => onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" />)}
+        {supports.map((support) => {
+          const title = support.name && support.name !== support.isin ? support.name : support.symbol ?? support.isin;
+          const label = [title, support.symbol && support.symbol !== title ? support.symbol : null, `ISIN ${support.isin}`].filter(Boolean).join(" · ");
+          return <TextField key={support.isin} label={label} value={assumptions[support.isin] ?? "5"} onChangeText={(value) => onAssumptionChange(support.isin, value)} keyboardType="decimal-pad" suffix="% / an" />;
+        })}
       </View> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ActionButton label={result ? "Actualiser la valorisation" : "Valoriser à cette date"} tone="dark" onPress={onValue} loading={loading} />

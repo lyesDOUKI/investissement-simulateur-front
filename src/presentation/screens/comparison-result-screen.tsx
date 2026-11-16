@@ -4,6 +4,7 @@ import type { ComparisonDataStatus, ComparisonInstallment, ComparisonParameters,
 import { ActionButton, Card, PageHeading, SectionTitle } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
+import { InstrumentIdentity } from "@/presentation/components/instrument-identity";
 
 const euro = (value: number | null) => value === null ? "Indisponible" : `${value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const signedEuro = (value: number | null) => value === null ? "Indisponible" : `${value > 0 ? "+" : ""}${euro(value)}`;
@@ -84,8 +85,7 @@ function ScenarioDetails({ scenario, isDca }: { scenario: ComparisonScenario; is
     {valuation.allocations.length > 0 ? <View style={styles.detailSection}>
       <Text style={styles.detailHeading}>Résultat par support</Text>
       {valuation.allocations.map((allocation, index) => <View key={`${allocation.instrumentKind}-${allocation.isin ?? allocation.name}-${index}`} style={styles.allocation}>
-        <View style={styles.allocationHeader}><Text style={styles.allocationTitle}>{allocation.name ?? allocation.isin ?? "Fonds euro"}</Text><StatusBadge status={allocation.status} /></View>
-        {allocation.isin ? <Text style={styles.meta}>{allocation.isin}</Text> : null}
+        <View style={styles.allocationHeader}><InstrumentIdentity name={allocation.name} symbol={allocation.symbol} isin={allocation.isin} fallback="Fonds euro" titleStyle={styles.allocationTitle} metaStyle={styles.meta} /><StatusBadge status={allocation.status} /></View>
         <SummaryMetric label="Montant placé" value={euro(allocation.invested)} />
         {allocation.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(allocation.shares)} /> : null}
         {allocation.observedDate || allocation.observedPrice !== null ? <SummaryMetric label={`Dernier cours disponible${allocation.observedDate ? ` · ${formatDateLabel(allocation.observedDate)}` : ""}`} value={euro(allocation.observedPrice)} /> : null}
@@ -122,7 +122,7 @@ function InstallmentCard({ installment, valuationDate }: { installment: Comparis
     <View style={styles.allocationHeader}><Text style={styles.installmentDate}>Échéance du {formatDateLabel(installment.dueDate)}</Text><Text style={[styles.badge, installment.nature === "observed" ? styles.observedBadge : styles.projectedBadge]}>{installmentNatureLabel(installment.nature)}</Text></View>
     <Text style={styles.meta}>{installment.executionDate ? `Exécution : ${formatDateLabel(installment.executionDate)}` : "Date d’exécution non renseignée"} · {euro(installment.amount)} au total</Text>
     {installment.allocations.map((line, lineIndex) => <View key={`${line.instrumentKind}-${line.isin ?? line.name}-${lineIndex}`} style={styles.installmentSupport}>
-      <View style={styles.allocationHeader}><Text style={styles.allocationTitle}>{line.isin ?? line.name ?? "Fonds euro"}</Text><StatusBadge status={line.status} /></View>
+      <View style={styles.allocationHeader}><InstrumentIdentity name={line.name} symbol={line.symbol} isin={line.isin} fallback="Fonds euro" titleStyle={styles.allocationTitle} metaStyle={styles.meta} /><StatusBadge status={line.status} /></View>
       <SummaryMetric label={line.status === "not-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
       {line.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(line.shares)} /> : null}
       <SummaryMetric label={`Prix à l’achat${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
@@ -152,7 +152,7 @@ function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
     const annualAssumption = allocation.instrumentKind === "uc"
       ? parameters.projectionAssumptions.find((item) => item.isin === allocation.isin)?.annualReturn
       : undefined;
-    details.push({ text: `${allocation.name ?? allocation.isin ?? "Fonds euro"} · Montant ${amount}`, kind: "allocation" });
+    details.push({ text: `${allocation.symbol ? `${allocation.symbol} · ` : ""}${allocation.name ?? allocation.isin ?? "Fonds euro"} · Montant ${amount}`, kind: "allocation" });
     if (annualAssumption !== undefined) details.push({ text: `↳ Hypothèse de rendement · ${rate(annualAssumption)}`, kind: "assumption" });
   }
   return details;

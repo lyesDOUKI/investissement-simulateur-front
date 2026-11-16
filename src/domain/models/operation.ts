@@ -5,12 +5,14 @@ export interface AllocationLine {
   id: string;
   instrumentKind: InstrumentKind;
   isin: string;
+  symbol?: string | null;
   name?: string;
   amount: number;
 }
 
 export interface Security {
   isin: string;
+  symbol?: string | null;
   name: string;
   shortName: string;
   color: string;
@@ -34,6 +36,7 @@ export interface Operation {
 export interface ValuedAllocation {
   instrumentKind: InstrumentKind;
   isin: string;
+  symbol?: string | null;
   name: string;
   invested: number;
   shares: number;
@@ -55,6 +58,7 @@ export interface InstallmentValuation {
   allocations: {
     instrumentKind: InstrumentKind;
     isin: string;
+    symbol?: string | null;
     name: string;
     amount: number;
     shares: number | null;
@@ -85,6 +89,7 @@ export interface InvestmentValuation {
 export interface PortfolioHolding {
   instrumentKind?: InstrumentKind;
   isin: string | null;
+  symbol?: string | null;
   name: string;
   invested?: number;
   shares?: number | null;
@@ -140,7 +145,7 @@ export interface ScenarioInput {
   valuationDate: string;
   executionDay?: number;
   delayBusinessDays?: number;
-  projectionAssumptions: { isin: string; annualReturn: number }[];
+  projectionAssumptions: { isin: string; symbol?: string | null; annualReturn: number }[];
 }
 
 export interface InvestmentComparison {
@@ -173,10 +178,11 @@ export interface ComparisonParameters {
   allocations: {
     instrumentKind: InstrumentKind;
     isin: string | null;
+    symbol?: string | null;
     name: string | null;
     amount: number;
   }[];
-  projectionAssumptions: { isin: string; annualReturn: number }[];
+  projectionAssumptions: { isin: string; symbol?: string | null; annualReturn: number }[];
 }
 
 export type ComparisonDataStatus = "observed" | "projected" | "missing" | "not-executed";
@@ -194,6 +200,7 @@ export interface ComparisonValuation {
 export interface ComparisonValuedAllocation {
   instrumentKind: InstrumentKind;
   isin: string | null;
+  symbol?: string | null;
   name: string | null;
   invested: number;
   shares: number | null;
@@ -219,6 +226,7 @@ export interface ComparisonInstallment {
 export interface ComparisonInstallmentAllocation {
   instrumentKind: InstrumentKind;
   isin: string | null;
+  symbol?: string | null;
   name: string | null;
   amount: number;
   shares: number | null;

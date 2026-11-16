@@ -3,6 +3,7 @@ import type { InstallmentValuation, ValuedAllocation, InvestmentValuation, Opera
 import { Card, PageHeading, SectionTitle, Divider } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
+import { InstrumentIdentity } from "@/presentation/components/instrument-identity";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 const units = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
@@ -24,8 +25,8 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
 
     <SectionTitle title={operation.kind === "dca" ? "Synthèse par support" : "Détail du versement"} />
     {result.allocations.map((allocation) => <Card key={allocation.instrumentKind + allocation.isin} style={styles.card}>
-      <View style={styles.row}><Text style={styles.title}>{allocation.name}</Text><Text style={styles.value}>{euro(allocation.value)}</Text></View>
-      <View style={styles.badgeRow}><Text style={styles.meta}>{allocation.instrumentKind === "uc" ? allocation.isin : "Fonds euro"}</Text><StatusBadge status={allocation.status} /></View>
+      <View style={styles.row}><InstrumentIdentity name={allocation.name} symbol={allocation.symbol} isin={allocation.instrumentKind === "uc" ? allocation.isin : null} fallback="Fonds euro" titleStyle={styles.title} /><Text style={styles.value}>{euro(allocation.value)}</Text></View>
+      <View style={styles.badgeRow}><StatusBadge status={allocation.status} /></View>
       <Row label="Montant placé" value={euro(allocation.invested)} />
       {allocation.instrumentKind === "uc" ? <Row label={operation.kind === "dca" ? "Parts acquises au total" : "Parts acquises le " + formatDateLabel(operation.date)} value={units(allocation.shares)} /> : <Text style={styles.meta}>Valeur du fonds euro estimée par le service</Text>}
       {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <Row label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
@@ -43,7 +44,7 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
           <Text style={styles.meta}>{executionLabel(installment)} · {euro(installment.amount)} au total</Text>
         </View>
         {installment.allocations.map((line, lineIndex) => <View key={`${line.instrumentKind}-${line.isin}-${lineIndex}`} style={styles.installmentAllocation}>
-          <View style={styles.badgeRow}><Text style={styles.title}>{line.instrumentKind === "uc" ? line.isin : line.name}</Text><StatusBadge status={line.status} /></View>
+          <View style={styles.badgeRow}><InstrumentIdentity name={line.name} symbol={line.symbol} isin={line.instrumentKind === "uc" ? line.isin : null} fallback="Fonds euro" titleStyle={styles.title} /><StatusBadge status={line.status} /></View>
           {line.instrumentKind === "fonds-euro" ? <Text style={styles.meta}>Fonds euro</Text> : null}
           <Row label={installment.nature === "not-yet-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
           {line.instrumentKind === "uc" ? <Row label={installment.nature === "not-yet-executed" ? "Parts prévues" : "Parts acquises"} value={line.shares === null ? installment.nature === "not-yet-executed" ? "À déterminer à l’exécution" : "Indisponible" : units(line.shares)} /> : null}

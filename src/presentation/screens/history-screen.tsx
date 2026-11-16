@@ -3,6 +3,7 @@ import type { Operation, Security } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, SectionTitle, text } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
+import { InstrumentIdentity } from "@/presentation/components/instrument-identity";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
@@ -43,7 +44,7 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
         <View style={styles.allocations}>
           {operation.allocations.map((line) => <View key={line.id} style={styles.allocation}>
             <Text style={styles.dot}>●</Text>
-            <Text style={styles.allocationName}>{securities.find((security) => security.isin === line.isin)?.shortName ?? line.name ?? line.isin}</Text>
+            <InstrumentIdentity name={securities.find((security) => security.isin === line.isin)?.shortName ?? line.name} symbol={line.symbol ?? securities.find((security) => security.isin === line.isin)?.symbol} isin={line.isin} fallback="Fonds euro" titleStyle={styles.allocationName} />
             <Text style={styles.allocationAmount}>{euro(line.amount)}</Text>
           </View>)}
         </View>

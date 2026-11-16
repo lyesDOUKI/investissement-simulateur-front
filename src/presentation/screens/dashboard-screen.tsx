@@ -17,6 +17,7 @@ import {
 } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
+import { InstrumentIdentity } from "@/presentation/components/instrument-identity";
 
 const euro = (amount: number | null) => amount === null
   ? "Indisponible"
@@ -137,10 +138,7 @@ export function DashboardScreen({
                         ]}
                       />
                       <View style={styles.holdingTitle}>
-                        <Text style={styles.holdingName}>
-                          {security?.shortName ?? holding.name}
-                        </Text>
-                        <Text style={styles.holdingIsin}>{holding.isin ?? "Fonds euro"}</Text>
+                        <InstrumentIdentity name={security?.shortName ?? holding.name} symbol={holding.symbol ?? security?.symbol} isin={holding.isin} fallback="Fonds euro" titleStyle={styles.holdingName} metaStyle={styles.holdingIsin} />
                       </View>
                       <View style={styles.holdingValue}>
                         <Text style={styles.holdingAmount}>{euro(holding.value)}</Text>

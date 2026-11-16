@@ -178,7 +178,7 @@ function fakeComparisonScenario(operation: Operation, valuation: InvestmentValua
       monthlyAmount: operation.kind === "dca" ? amount : undefined,
       executionDay,
       delayBusinessDays,
-      allocations: allocations.map((line) => ({ instrumentKind: line.instrumentKind, isin: line.instrumentKind === "uc" ? line.isin : null, name: line.name ?? null, amount: line.amount })),
+      allocations: allocations.map((line) => ({ instrumentKind: line.instrumentKind, isin: line.instrumentKind === "uc" ? line.isin : null, symbol: line.symbol ?? null, name: line.name ?? null, amount: line.amount })),
       projectionAssumptions: projectionAssumptions.filter((assumption) => allocations.some((line) => line.instrumentKind === "uc" && line.isin === assumption.isin)),
     },
     valuation: {
