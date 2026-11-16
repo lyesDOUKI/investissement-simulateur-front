@@ -151,9 +151,9 @@ function parameterDetails(parameters: ComparisonParameters, isDca: boolean) {
     const amount = `${allocation.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €${isDca ? " / mois" : ""}`;
     const annualAssumption = allocation.instrumentKind === "uc"
       ? parameters.projectionAssumptions.find((item) => item.isin === allocation.isin)?.annualReturn
-      : parameters.euroFundAssumptions.find((item) => item.name === allocation.name)?.annualRate;
+      : undefined;
     details.push({ text: `${allocation.name ?? allocation.isin ?? "Fonds euro"} · Montant ${amount}`, kind: "allocation" });
-    if (annualAssumption !== undefined) details.push({ text: `↳ ${allocation.instrumentKind === "uc" ? "Hypothèse de rendement" : "Taux fonds euro"} · ${rate(annualAssumption)}`, kind: "assumption" });
+    if (annualAssumption !== undefined) details.push({ text: `↳ Hypothèse de rendement · ${rate(annualAssumption)}`, kind: "assumption" });
   }
   return details;
 }

@@ -5,7 +5,7 @@ import { palette as p } from "@/presentation/theme";
 import { formatDateLabel } from "@/presentation/utils/format-date";
 import { DateField } from "@/presentation/components/date-field";
 
-type AllocationField = "isin" | "amount" | "instrumentKind" | "name" | "annualReturnPct";
+type AllocationField = "isin" | "amount" | "instrumentKind" | "name";
 
 export function ScenarioFormScreen(props: {
   operation: Operation;
@@ -17,7 +17,7 @@ export function ScenarioFormScreen(props: {
   delayBusinessDays: string;
   lines: AllocationLine[];
   securities: Security[];
-  annualReturnPct: string;
+  assumptions: Record<string, string>;
   error: string;
   loading: boolean;
   onStartDateChange: (value: string) => void;
@@ -26,7 +26,7 @@ export function ScenarioFormScreen(props: {
   onTotalChange: (value: string) => void;
   onExecutionDayChange: (value: string) => void;
   onDelayChange: (value: string) => void;
-  onAnnualReturnChange: (value: string) => void;
+  onAssumptionChange: (isin: string, value: string) => void;
   onLineChange: (id: string, field: AllocationField, value: string) => void;
   onAddLine: () => void;
   onRemoveLine: (id: string) => void;
@@ -35,6 +35,15 @@ export function ScenarioFormScreen(props: {
   const { operation, operations, startDate, date, total, executionDay, delayBusinessDays, lines, securities } = props;
   const savedPlans = operations.filter((item) => item.kind === "dca" && item.id !== operation.id);
   const update = (line: AllocationLine, field: AllocationField, value: string) => props.onLineChange(line.id, field, value);
+  const targetMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(date);
+  const targetDate = targetMatch ? new Date(Number(targetMatch[3]), Number(targetMatch[2]) - 1, Number(targetMatch[1])) : null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const needsProjection = targetDate !== null && targetDate > today;
+  const scenarioIsins = [...operation.allocations, ...lines]
+    .filter((line) => line.instrumentKind === "uc" && line.isin.trim())
+    .reduce<string[]>((unique, line) => unique.includes(line.isin) ? unique : [...unique, line.isin], []);
+  const supportName = (isin: string) => securities.find((security) => security.isin === isin)?.shortName
+    ?? [...operation.allocations, ...lines].find((line) => line.isin === isin)?.name ?? isin;
 
   return <>
     <PageHeading eyebrow="Comparaison · paramètres" title="Construire l’autre scénario" subtitle="Choisissez une date cible commune, puis modifiez les paramètres du scénario B. Votre opération reste le scénario A de référence." />
@@ -74,7 +83,6 @@ export function ScenarioFormScreen(props: {
         <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
         <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" />
       </> : null}
-      <TextField label="Hypothèse annuelle commune" value={props.annualReturnPct} onChangeText={props.onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Appliquée par le service aux mêmes ISIN dans A et B lorsque leur valeur doit être projetée." />
     </Card>
 
     <SectionTitle title="3 · Allocation du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
@@ -93,11 +101,22 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{securities.map((security) => <Pill key={security.isin} label={security.shortName} onPress={() => update(line, "isin", security.isin)} />)}</View>
       </> : <>
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(value) => update(line, "name", value)} placeholder="Fonds euro du contrat" />
-        <TextField label="Taux annuel du fonds euro" value={String(line.annualReturnPct ?? "")} onChangeText={(value) => update(line, "annualReturnPct", value)} keyboardType="decimal-pad" suffix="%" helper="Hypothèse transmise au service si ce support doit être projeté." />
       </>}
       <TextField label="Montant affecté" value={String(line.amount || "")} onChangeText={(value) => update(line, "amount", value)} keyboardType="decimal-pad" suffix="€" />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.addLine}><Text style={styles.addText}>＋ Ajouter un support au scénario B</Text></Pressable>
+    {needsProjection && scenarioIsins.length > 0 ? <Card style={styles.projectionCard}>
+      <Text style={styles.sectionTitle}>4 · Hypothèses de rendement à la date cible</Text>
+      <Text style={styles.helper}>Renseignez une hypothèse annuelle pour chaque ISIN. Si un support est présent dans A et B, le même taux s’applique aux deux scénarios.</Text>
+      {scenarioIsins.map((isin) => {
+        const inA = operation.allocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
+        const inB = lines.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
+        const scenarios = inA && inB ? "A et B" : inA ? "A" : "B";
+        return <TextField key={isin} label={`${supportName(isin)} · ${isin} · Scénario ${scenarios}`} value={props.assumptions[isin] ?? ""}
+          onChangeText={(value) => props.onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" placeholder="Ex. 6" />;
+      })}
+      <Text style={styles.helper}>Le fonds euro conserve le taux de l’adapter ; aucune hypothèse n’est à saisir pour lui.</Text>
+    </Card> : null}
     <Card style={styles.note}><Text style={styles.noteTitle}>Une comparaison utile</Text><Text style={styles.helper}>Le résultat présente côte à côte l’effort investi, les valeurs retournées et les écarts. Il ne désigne pas un plan « meilleur » sans tenir compte de vos critères.</Text></Card>
     {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
     <ActionButton label="Comparer A et B →" onPress={props.onCompare} loading={props.loading} />
@@ -128,6 +147,7 @@ const styles = StyleSheet.create({
   addLine: { paddingVertical: 16 },
   addText: { color: p.forestLight, fontSize: 13, fontWeight: "700" },
   note: { backgroundColor: p.surfaceSubtle, gap: 5, marginTop: 5, marginBottom: 12 },
+  projectionCard: { gap: 12, marginTop: 8, marginBottom: 12, backgroundColor: p.softGreen },
   noteTitle: { color: p.ink, fontSize: 13, fontWeight: "700" },
   error: { color: p.red, fontSize: 13, paddingVertical: 8 },
 });

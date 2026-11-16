@@ -143,7 +143,7 @@ export interface ScenarioInput {
   valuationDate: string;
   executionDay?: number;
   delayBusinessDays?: number;
-  annualReturnPct?: number;
+  projectionAssumptions: { isin: string; annualReturn: number }[];
 }
 
 export interface InvestmentComparison {
@@ -180,7 +180,6 @@ export interface ComparisonParameters {
     amount: number;
   }[];
   projectionAssumptions: { isin: string; annualReturn: number }[];
-  euroFundAssumptions: { name: string; annualRate: number }[];
 }
 
 export type ComparisonDataStatus = "observed" | "projected" | "missing" | "not-executed";

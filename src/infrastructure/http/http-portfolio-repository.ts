@@ -109,19 +109,11 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const allocations = input.allocations.map((allocation) => allocation.instrumentKind === "uc"
       ? { instrumentKind: "UNIT_LINKED", isin: allocation.isin, amount: allocation.amount }
       : { instrumentKind: "EURO_FUND", name: allocation.name ?? "Fonds euro", amount: allocation.amount });
-    const projectionAssumptions = [...new Set([
+    const allowedIsins = new Set([
       ...operation.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
       ...input.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
-    ])].map((isin) => ({ isin, annualReturn: (input.annualReturnPct ?? 5) / 100 }));
-    const euroFundNames = [...new Set([
-      ...operation.allocations.filter((allocation) => allocation.instrumentKind === "fonds-euro").map((allocation) => allocation.name ?? "Fonds euro"),
-      ...input.allocations.filter((allocation) => allocation.instrumentKind === "fonds-euro").map((allocation) => allocation.name ?? "Fonds euro"),
-    ])];
-    const euroFundAssumptions = euroFundNames.map((name) => {
-      const matchingAlternative = input.allocations.find((allocation) => allocation.instrumentKind === "fonds-euro" && (allocation.name ?? "Fonds euro") === name);
-      const matchingReference = operation.allocations.find((allocation) => allocation.instrumentKind === "fonds-euro" && (allocation.name ?? "Fonds euro") === name);
-      return { name, annualRate: ((matchingAlternative?.annualReturnPct ?? matchingReference?.annualReturnPct ?? 0) / 100) };
-    });
+    ]);
+    const projectionAssumptions = input.projectionAssumptions.filter((assumption) => allowedIsins.has(assumption.isin));
     const alternative = operation.kind === "dca"
       ? { date: dateIso(input.startDate), amount: input.amount, executionDay: input.executionDay, delayBusinessDays: input.delayBusinessDays, allocations }
       : { date: dateIso(input.startDate), amount: input.amount, allocations };
@@ -129,7 +121,6 @@ export class HttpPortfolioRepository implements PortfolioRepository {
       valuationDate: dateIso(input.valuationDate),
       alternative,
       projectionAssumptions,
-      euroFundAssumptions,
     };
     const path = operation.kind === "dca" ? `/dca-investments/${id}/comparisons` : `/one-time-payments/${id}/comparisons`;
     const response = await this.request(path, { method: "POST", body: JSON.stringify(request) });
@@ -169,7 +160,6 @@ export class HttpPortfolioRepository implements PortfolioRepository {
           amount: allocation.amount ?? 0,
         })),
         projectionAssumptions: (parameters.projectionAssumptions ?? []).map((assumption: AnyObject) => ({ isin: assumption.isin, annualReturn: assumption.annualReturn })),
-        euroFundAssumptions: (parameters.euroFundAssumptions ?? []).map((assumption: AnyObject) => ({ name: assumption.name, annualRate: assumption.annualRate })),
       },
       valuation: {
         valuationDate: dateLocal(x.valuation?.valuationDate),

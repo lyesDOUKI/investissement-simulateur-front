@@ -159,8 +159,8 @@ export class FakePortfolioRepository implements PortfolioRepository {
     return {
       valuationDate: input.valuationDate,
       valuationStatus: "complete",
-      original: fakeComparisonScenario(fallbackOperation, original, fallbackOperation.allocations, fallbackOperation.date, fallbackOperation.amount, fallbackOperation.executionDay, fallbackOperation.delayBusinessDays),
-      alternative: fakeComparisonScenario(fallbackOperation, { ...alternative, valuationDate: input.valuationDate, assumptionPct: input.annualReturnPct }, input.allocations, input.startDate, input.amount, input.executionDay, input.delayBusinessDays, input.annualReturnPct, null),
+      original: fakeComparisonScenario(fallbackOperation, original, fallbackOperation.allocations, fallbackOperation.date, fallbackOperation.amount, fallbackOperation.executionDay, fallbackOperation.delayBusinessDays, input.projectionAssumptions),
+      alternative: fakeComparisonScenario(fallbackOperation, { ...alternative, valuationDate: input.valuationDate }, input.allocations, input.startDate, input.amount, input.executionDay, input.delayBusinessDays, input.projectionAssumptions, null),
       difference: operationId === demoPlan.id
         ? { invested: 100, value: 136.84, gain: 36.84, gainRatePercentagePoints: 10.05 }
         : { invested: -100, value: -85.6, gain: 14.4, gainRatePercentagePoints: 4.22 },
@@ -168,7 +168,7 @@ export class FakePortfolioRepository implements PortfolioRepository {
   }
 }
 
-function fakeComparisonScenario(operation: Operation, valuation: InvestmentValuation, allocations: Operation["allocations"], startDate: string, amount: number, executionDay?: number, delayBusinessDays?: number, annualReturnPct = 5, operationId: string | null = operation.id) {
+function fakeComparisonScenario(operation: Operation, valuation: InvestmentValuation, allocations: Operation["allocations"], startDate: string, amount: number, executionDay: number | undefined, delayBusinessDays: number | undefined, projectionAssumptions: ScenarioInput["projectionAssumptions"], operationId: string | null = operation.id) {
   return {
     operationId,
     parameters: {
@@ -179,8 +179,7 @@ function fakeComparisonScenario(operation: Operation, valuation: InvestmentValua
       executionDay,
       delayBusinessDays,
       allocations: allocations.map((line) => ({ instrumentKind: line.instrumentKind, isin: line.instrumentKind === "uc" ? line.isin : null, name: line.name ?? null, amount: line.amount })),
-      projectionAssumptions: allocations.filter((line) => line.instrumentKind === "uc").map((line) => ({ isin: line.isin, annualReturn: annualReturnPct / 100 })),
-      euroFundAssumptions: allocations.filter((line) => line.instrumentKind === "fonds-euro").map((line) => ({ name: line.name ?? "Fonds euro", annualRate: (line.annualReturnPct ?? 0) / 100 })),
+      projectionAssumptions: projectionAssumptions.filter((assumption) => allocations.some((line) => line.instrumentKind === "uc" && line.isin === assumption.isin)),
     },
     valuation: {
       valuationDate: valuation.valuationDate,
