@@ -8,13 +8,14 @@ import { DateField } from "@/presentation/components/date-field";
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 const units = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
 
-export function ValuationResultScreen({ operation, date, annualReturnPct, result, error, loading, onDateChange, onAnnualReturnChange, onValue, onCompare }: {
+export function ValuationResultScreen({ operation, date, annualReturnPct, result, error, loading, compareEnabled, onDateChange, onAnnualReturnChange, onValue, onCompare }: {
   operation: Operation;
   date: string;
   annualReturnPct: string;
   result: InvestmentValuation | null;
   error: string;
   loading: boolean;
+  compareEnabled: boolean;
   onDateChange: (value: string) => void;
   onAnnualReturnChange: (value: string) => void;
   onValue: () => void;
@@ -82,7 +83,7 @@ export function ValuationResultScreen({ operation, date, annualReturnPct, result
       <TextField label="Taux annuel (hypothèse)" value={annualReturnPct} onChangeText={onAnnualReturnChange} keyboardType="decimal-pad" suffix="%" helper="Transmis au service pour une projection future." />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <ActionButton label={result ? "Mettre à jour la valorisation" : "Demander la valorisation"} tone={result ? "quiet" : "dark"} onPress={onValue} loading={loading} />
-      {result ? <ActionButton label="Comparer avec une autre hypothèse" tone="light" onPress={onCompare} /> : null}
+      {result && compareEnabled ? <ActionButton label="Comparer avec une autre hypothèse" tone="light" onPress={onCompare} /> : null}
     </Card>
     <Text style={styles.disclaimer}>Réponse fixe de l’adaptateur de démonstration en V0. Aucun ordre n’est transmis au courtier.</Text>
   </>;

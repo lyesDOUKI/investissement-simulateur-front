@@ -6,11 +6,12 @@ import { formatDateLabel } from "@/presentation/utils/format-date";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-export function HistoryScreen({ operations, securities, onValue, onCompare, onVersement, onDca }: {
+export function HistoryScreen({ operations, securities, onValue, onCompare, compareEnabled, onVersement, onDca }: {
   operations: Operation[];
   securities: Security[];
   onValue: (operation: Operation) => void;
   onCompare: (operation: Operation) => void;
+  compareEnabled: boolean;
   onVersement: () => void;
   onDca: () => void;
 }) {
@@ -50,9 +51,9 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, onVe
           <Pressable onPress={() => onValue(operation)} style={styles.actionButton}>
             <Text style={styles.actionText}>Valeur à une date →</Text>
           </Pressable>
-          <Pressable onPress={() => onCompare(operation)} style={[styles.actionButton, styles.actionButtonSecondary]}>
+          {compareEnabled ? <Pressable onPress={() => onCompare(operation)} style={[styles.actionButton, styles.actionButtonSecondary]}>
             <Text style={styles.actionText}>Et si ?</Text>
-          </Pressable>
+          </Pressable> : null}
         </View>
       </Card>)}
     <Text style={styles.disclaimer}>Les données de cet environnement de démonstration sont conservées en mémoire pendant la session.</Text>

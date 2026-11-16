@@ -14,6 +14,8 @@ const demoPassword = "test";
 const waitForDemoResponse = () => new Promise<void>((resolve) => setTimeout(resolve, 650));
 
 export class FakeAuthenticationRepository implements AuthenticationRepository {
+  disconnect(): void {}
+  async connectDemo(): Promise<UserAccount> { await waitForDemoResponse(); return { ...demoAccount }; }
   async signIn(credentials: SignInCredentials): Promise<UserAccount | null> {
     await waitForDemoResponse();
     const email = credentials.email.trim().toLocaleLowerCase("fr-FR");

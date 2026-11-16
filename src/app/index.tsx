@@ -3,7 +3,7 @@ import { ActivityIndicator, BackHandler, Pressable, ScrollView, StatusBar, Style
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { AllocationLine, InvestmentComparison, InvestmentValuation, Operation, OperationKind, Portfolio, ScenarioInput, Security } from "@/domain/models/operation";
 import type { UserAccount } from "@/domain/models/user-account";
-import { dependencies } from "@/infrastructure/dependencies";
+import { dependencies, flags } from "@/infrastructure/dependencies";
 import { DashboardScreen } from "@/presentation/screens/dashboard-screen";
 import { HistoryScreen } from "@/presentation/screens/history-screen";
 import { InvestmentFormScreen } from "@/presentation/screens/investment-form-screen";
@@ -12,7 +12,6 @@ import { SimulationScreen } from "@/presentation/screens/simulation-screen";
 import { ValuationResultScreen } from "@/presentation/screens/valuation-screen";
 import { ScenarioFormScreen } from "@/presentation/screens/scenario-screen";
 import { LoginScreen } from "@/presentation/screens/login-screen";
-import { RegisterScreen } from "@/presentation/screens/register-screen";
 import { AccountScreen } from "@/presentation/screens/account-screen";
 import { palette as p } from "@/presentation/theme";
 
@@ -27,8 +26,6 @@ export default function HomeScreen(){
  const [page,setPage]=useState<Page>("login");
  const [backStack,setBackStack]=useState<Page[]>([]);
  const [account,setAccount]=useState<UserAccount|null>(null);
- const [authEmail,setAuthEmail]=useState("");
- const [authPassword,setAuthPassword]=useState("");
  const [authError,setAuthError]=useState("");
  const [authLoading,setAuthLoading]=useState(false);
  const [portfolio,setPortfolio]=useState<Portfolio|null>(null);
@@ -50,13 +47,12 @@ export default function HomeScreen(){
  const requestSequence=useRef(0);
 
  const refresh=async()=>{const [nextPortfolio,nextSecurities]=await Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]);setPortfolio(nextPortfolio);setSecurities(nextSecurities);};
- useEffect(()=>{void Promise.all([dependencies.getPortfolio.execute(today()),dependencies.getSecurities.execute()]).then(([nextPortfolio,nextSecurities])=>{setPortfolio(nextPortfolio);setSecurities(nextSecurities);});},[]);
  const navigate=(destination:Page)=>{setBackStack((current)=>[...current,page]);setPage(destination);};
  const goTo=(destination:MainPage)=>{requestSequence.current+=1;setLoading(false);setBackStack([]);setPage(destination);setError("");};
  const goBack=useCallback(()=>{requestSequence.current+=1;setLoading(false);const previous=backStack[backStack.length-1]??(account?"dashboard":"login");setBackStack((current)=>current.slice(0,-1));setPage(previous);setError("");},[backStack,account]);
  useEffect(()=>{if(page==="login"||page==="dashboard"||page==="history"||page==="simulation")return;const subscription=BackHandler.addEventListener("hardwareBackPress",()=>{goBack();return true;});return ()=>subscription.remove();},[page,goBack]);
- const signIn=async()=>{if(!authEmail.trim()||!authPassword){setAuthError("Saisissez votre adresse e-mail et votre mot de passe.");return;}setAuthLoading(true);setAuthError("");try{const signedIn=await dependencies.signIn.execute({email:authEmail,password:authPassword});if(!signedIn){setAuthError("Adresse e-mail ou mot de passe incorrect.");return;}setAccount(signedIn);setBackStack([]);setPage("dashboard");setAuthPassword("");}catch{setAuthError("Connexion impossible. Réessayez.");}finally{setAuthLoading(false);}};
- const signOut=()=>{requestSequence.current+=1;setAccount(null);setPage("login");setBackStack([]);setAuthPassword("");setAuthError("");setError("");};
+ const signIn=async()=>{setAuthLoading(true);setAuthError("");try{const signedIn=await dependencies.connectDemo.execute();await refresh();setAccount(signedIn);setBackStack([]);setPage("dashboard");}catch(e){dependencies.connectDemo.disconnect();setPortfolio(null);setAuthError(e instanceof Error?e.message:"Connexion impossible. Vérifiez le mock OIDC.");}finally{setAuthLoading(false);}};
+ const signOut=()=>{requestSequence.current+=1;dependencies.connectDemo.disconnect();setAccount(null);setPortfolio(null);setPage("login");setBackStack([]);setAuthError("");setError("");};
  const startForm=(kind:OperationKind)=>{setFormKind(kind);setTotal(kind==="dca"?"100":"500");setLines([newLine("",kind==="dca"?100:500)]);setDate(today());setExecutionDay("10");setDelay("3");setAnnualReturnPct("5");setError("");navigate("form");};
  const startValue=(operation:Operation)=>{const requestId=++requestSequence.current;setSelected(operation);setDate(today());setAnnualReturnPct(String(operation.annualReturnPct??5));setValuation(null);setError("");navigate("valuation-result");setLoading(true);void dependencies.valueInvestment.execute(operation,{valuationDate:today(),annualReturnPct:operation.annualReturnPct??5}).then((result)=>{if(requestSequence.current===requestId)setValuation(result);}).catch((caught)=>{if(requestSequence.current===requestId)setError(caught instanceof Error?caught.message:"Valorisation impossible.");}).finally(()=>{if(requestSequence.current===requestId)setLoading(false);});};
  const startScenario=(operation:Operation)=>{requestSequence.current+=1;setLoading(false);setSelected(operation);setDate(page==="valuation-result"?date:today());setScenarioStartDate(operation.date);setTotal(String(operation.amount));setExecutionDay(String(operation.executionDay??10));setDelay(String(operation.delayBusinessDays??3));setLines(operation.allocations.map((line)=>({...line,id:"line-"+(++nextLineId)})));setAnnualReturnPct(String(operation.annualReturnPct??5));setComparison(null);setScenarioRequest(null);setError("");navigate("scenario-form");};
@@ -73,13 +69,13 @@ export default function HomeScreen(){
  return <SafeAreaView style={styles.safe} edges={["top","bottom"]}><StatusBar barStyle="light-content"/>
   {account&&!main&&page!=="register"?<View style={styles.context}><Pressable onPress={goBack} hitSlop={10} accessibilityRole="button" accessibilityLabel="Revenir à l’écran précédent" style={styles.back}><Text style={styles.backText}>‹ Retour</Text></Pressable><Text style={styles.brand}>ALTO<Text style={{color:p.forestLight}}>.</Text></Text><View style={{width:80}}/></View>:null}
   <ScrollView style={styles.scroll} contentContainerStyle={[styles.content,(page==="form"||page==="valuation-result"||page==="scenario-form"||page==="simulation"||page==="account")&&styles.narrow,(page==="login"||page==="register")&&styles.authContent]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-   {!account ? page==="register" ? <RegisterScreen onBack={goBack}/> : <LoginScreen email={authEmail} password={authPassword} error={authError} loading={authLoading} onEmailChange={(value)=>{setAuthEmail(value);setAuthError("");}} onPasswordChange={(value)=>{setAuthPassword(value);setAuthError("");}} onSubmit={()=>void signIn()} onRegister={()=>{setAuthError("");navigate("register");}}/> : !portfolio?<View style={styles.initialLoading}><ActivityIndicator color={p.forestLight}/><Text style={styles.loadingText}>Chargement de votre espace…</Text></View>:<>
+   {!account ? <LoginScreen error={authError} loading={authLoading} onSubmit={()=>void signIn()}/> : !portfolio?<View style={styles.initialLoading}><ActivityIndicator color={p.forestLight}/><Text style={styles.loadingText}>Chargement de votre espace…</Text></View>:<>
     {page==="dashboard"?<DashboardScreen portfolio={portfolio} securities={securities} account={account} onAccount={()=>navigate("account")} onAddVersement={()=>startForm("versement")} onAddDca={()=>startForm("dca")} onHistory={()=>goTo("history")} onValue={startValue}/>:null}
-    {page==="simulation"?<SimulationScreen operations={portfolio.operations} onValue={startValue} onCompare={startScenario} onJournal={()=>goTo("history")}/>:null}
-    {page==="history"?<HistoryScreen operations={portfolio.operations} securities={securities} onValue={startValue} onCompare={startScenario} onVersement={()=>startForm("versement")} onDca={()=>startForm("dca")}/>:null}
+    {page==="simulation"?<SimulationScreen operations={portfolio.operations} onValue={startValue} onCompare={startScenario} compareEnabled={flags.comparison} onJournal={()=>goTo("history")}/>:null}
+    {page==="history"?<HistoryScreen operations={portfolio.operations} securities={securities} onValue={startValue} onCompare={startScenario} compareEnabled={flags.comparison} onVersement={()=>startForm("versement")} onDca={()=>startForm("dca")}/>:null}
     {page==="form"?<InvestmentFormScreen kind={formKind} total={total} lines={lines} securities={securities} date={date} executionDay={executionDay} delayBusinessDays={delay} annualReturnPct={annualReturnPct} loading={loading} error={error}
       onTotalChange={setTotal} onLineChange={updateLine} onAddLine={()=>setLines((current)=>[...current,newLine()])} onRemoveLine={(id)=>setLines((current)=>current.filter((line)=>line.id!==id))} onDateChange={setDate} onExecutionDayChange={setExecutionDay} onDelayChange={setDelay} onAnnualReturnChange={setAnnualReturnPct} onSubmit={()=>void submitOperation()}/>:null}
-    {page==="valuation-result"&&selected?<ValuationResultScreen operation={selected} date={date} annualReturnPct={annualReturnPct} result={valuation} error={error} loading={loading} onDateChange={(v)=>{setDate(v);setValuation(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setValuation(null);}} onValue={()=>void valueAtDate()} onCompare={()=>startScenario(selected)}/>:null}
+    {page==="valuation-result"&&selected?<ValuationResultScreen operation={selected} date={date} annualReturnPct={annualReturnPct} result={valuation} error={error} loading={loading} compareEnabled={flags.comparison} onDateChange={(v)=>{setDate(v);setValuation(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setValuation(null);}} onValue={()=>void valueAtDate()} onCompare={()=>startScenario(selected)}/>:null}
     {page==="scenario-form"&&selected?<ScenarioFormScreen operation={selected} operations={portfolio.operations} startDate={scenarioStartDate} date={date} total={total} executionDay={executionDay} delayBusinessDays={delay} lines={lines} securities={securities} annualReturnPct={annualReturnPct} error={error} loading={loading}
       onStartDateChange={(v)=>{setScenarioStartDate(v);setComparison(null);setScenarioRequest(null);}} onUseSavedPlan={useSavedPlan} onDateChange={(v)=>{setDate(v);setComparison(null);setScenarioRequest(null);}} onExecutionDayChange={(v)=>{setExecutionDay(v);setComparison(null);setScenarioRequest(null);}} onDelayChange={(v)=>{setDelay(v);setComparison(null);setScenarioRequest(null);}} onTotalChange={(v)=>{setTotal(v);setComparison(null);setScenarioRequest(null);}} onAnnualReturnChange={(v)=>{setAnnualReturnPct(v);setComparison(null);setScenarioRequest(null);}} onLineChange={(id,field,value)=>{setComparison(null);setScenarioRequest(null);updateLine(id,field,value);}} onAddLine={()=>{setComparison(null);setScenarioRequest(null);setLines((current)=>[...current,newLine()]);}} onRemoveLine={(id)=>{setComparison(null);setScenarioRequest(null);setLines((current)=>current.filter((line)=>line.id!==id));}} onCompare={()=>void compare()}/>:null}
     {page==="comparison-result"&&comparison&&selected&&scenarioRequest?<ComparisonResultScreen operation={selected} scenario={scenarioRequest} result={comparison} onAdjust={goBack}/>:null}
