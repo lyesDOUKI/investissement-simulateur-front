@@ -41,12 +41,13 @@ export function ScenarioFormScreen(props: {
   const targetDate = targetMatch ? new Date(Number(targetMatch[3]), Number(targetMatch[2]) - 1, Number(targetMatch[1])) : null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const needsProjection = targetDate !== null && targetDate > today;
-  const scenarioIsins = [...operation.allocations, ...lines]
+  const originalAllocations = [...operation.allocations, ...(operation.configurationHistory ?? []).flatMap((revision) => revision.allocations)];
+  const scenarioIsins = [...originalAllocations, ...lines]
     .filter((line) => line.instrumentKind === "uc" && line.isin.trim())
     .reduce<string[]>((unique, line) => unique.includes(line.isin) ? unique : [...unique, line.isin], []);
   const supportName = (isin: string) => securities.find((security) => security.isin === isin)?.shortName
-    ?? [...operation.allocations, ...lines].find((line) => line.isin === isin)?.name ?? isin;
-  const supportSymbol = (isin: string) => [...operation.allocations, ...lines].find((line) => line.isin === isin)?.symbol
+    ?? [...originalAllocations, ...lines].find((line) => line.isin === isin)?.name ?? isin;
+  const supportSymbol = (isin: string) => [...originalAllocations, ...lines].find((line) => line.isin === isin)?.symbol
     ?? securities.find((security) => security.isin === isin)?.symbol ?? null;
 
   return <>
@@ -64,6 +65,7 @@ export function ScenarioFormScreen(props: {
       <Text style={styles.referenceMeta}>{operation.kind === "dca" ? "Versements réguliers · " + totalLabel(operation.amount) + " / mois" : "Versement · " + totalLabel(operation.amount)}</Text>
       <Text style={styles.referenceMeta}>Début : {formatDateLabel(operation.date)}</Text>
       {operation.kind === "dca" ? <Text style={styles.referenceMeta}>Prélèvement le {operation.executionDay} · délai {operation.delayBusinessDays} jours ouvrés</Text> : null}
+      {operation.kind === "dca" && operation.configurationHistory?.length ? <Text style={styles.referenceMeta}>Le scénario A conserve la répartition valable pour chaque échéance passée.</Text> : null}
       <View style={styles.referenceLines}>{operation.allocations.map((line) => <View key={line.id} style={styles.referenceLine}>
         <InstrumentIdentity name={line.name ?? securities.find((security) => security.isin === line.isin)?.shortName} symbol={line.symbol ?? securities.find((security) => security.isin === line.isin)?.symbol} isin={line.instrumentKind === "uc" ? line.isin : null} fallback="Fonds euro" titleStyle={styles.referenceMeta} />
         <Text style={styles.referenceMeta}>{totalLabel(line.amount)}{operation.kind === "dca" ? " / mois" : ""}</Text>
@@ -122,7 +124,7 @@ export function ScenarioFormScreen(props: {
       <Text style={styles.sectionTitle}>4 · Hypothèses de rendement à la date cible</Text>
       <Text style={styles.helper}>Indiquez le rendement annuel envisagé jusqu’à la date cible. Un ISIN commun à A et B utilise le même taux dans les deux scénarios.</Text>
       {scenarioIsins.map((isin) => {
-        const inA = operation.allocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
+        const inA = originalAllocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const inB = lines.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const scenarios = inA && inB ? "A et B" : inA ? "A" : "B";
         const symbol = supportSymbol(isin);

@@ -1,6 +1,7 @@
 import { CompareInvestment } from "@/application/use-cases/compare-investment";
 import { ConnectDemoSession } from "@/application/use-cases/connect-demo-session";
 import { CreateOperation } from "@/application/use-cases/create-operation";
+import { ChangeDcaConfiguration } from "@/application/use-cases/change-dca-configuration";
 import { GetPortfolio } from "@/application/use-cases/get-portfolio";
 import { GetSecurities } from "@/application/use-cases/get-securities";
 import { ValueInvestment } from "@/application/use-cases/value-investment";
@@ -25,6 +26,7 @@ export const dependencies = {
   getPortfolio: new GetPortfolio(portfolioRepository),
   getSecurities: new GetSecurities(portfolioRepository),
   createOperation: new CreateOperation(portfolioRepository),
+  changeDcaConfiguration: new ChangeDcaConfiguration(portfolioRepository),
   valueInvestment: new ValueInvestment(portfolioRepository),
   compareInvestment: new CompareInvestment(portfolioRepository),
 };

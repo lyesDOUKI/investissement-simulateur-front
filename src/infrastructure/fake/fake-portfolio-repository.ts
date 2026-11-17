@@ -1,5 +1,7 @@
 import type {
   CreateOperationInput,
+  ChangeDcaConfigurationInput,
+  DcaConfigurationRevision,
   InvestmentComparison,
   InvestmentValuation,
   Operation,
@@ -21,6 +23,7 @@ const demoPlan: Operation = {
   date: "14/08/2026", detail: "Prélèvement le 10 · report 3 jours ouvrés",
   executionDay: 10, delayBusinessDays: 3,
   allocations: [{ id: "demo-line", instrumentKind: "uc", isin: "FR0010380675", amount: 100 }],
+  configurationHistory: [{ revisionNumber: 1, effectiveFromInstallmentNumber: 1, recordedAt: "14/08/2026", monthlyAmount: 100, allocations: [{ id: "demo-revision-line", instrumentKind: "uc", isin: "FR0010380675", amount: 100 }] }],
 };
 
 /** A response fixture copied from the supplied Java console log. */
@@ -132,9 +135,30 @@ export class FakePortfolioRepository implements PortfolioRepository {
       detail: input.kind === "dca"
         ? "Paramètres de plan enregistrés · résultat fourni par l’adaptateur de démonstration"
         : "Versement saisi dans le journal · aucun ordre transmis",
+      ...(input.kind === "dca" ? { configurationHistory: [{ revisionNumber: 1, effectiveFromInstallmentNumber: 1, recordedAt: input.date, monthlyAmount: input.amount, allocations: input.allocations }] } : {}),
     };
     this.operations = [operation, ...this.operations];
     return operation;
+  }
+
+  async changeDcaConfiguration(input: ChangeDcaConfigurationInput): Promise<DcaConfigurationRevision> {
+    await waitForDemoResponse();
+    const current = this.operations.find((operation) => operation.id === input.operationId);
+    const previousRevisions = current?.configurationHistory ?? [];
+    const revision: DcaConfigurationRevision = {
+      revisionNumber: previousRevisions.reduce((highest, item) => Math.max(highest, item.revisionNumber), 0) + 1,
+      effectiveFromInstallmentNumber: previousRevisions.length ? previousRevisions[previousRevisions.length - 1].effectiveFromInstallmentNumber + 3 : 4,
+      recordedAt: "17/11/2026",
+      monthlyAmount: input.amount,
+      allocations: input.allocations.map((allocation, index) => ({ ...allocation, id: `fake-revision-${index + 1}` })),
+    };
+    this.operations = this.operations.map((operation) => operation.id !== input.operationId ? operation : {
+      ...operation,
+      amount: revision.monthlyAmount,
+      allocations: revision.allocations,
+      configurationHistory: [...(operation.configurationHistory ?? []), revision],
+    });
+    return revision;
   }
 
   async valueOperation(operationId: string, input: ValueOperationInput): Promise<InvestmentValuation> {

@@ -7,7 +7,7 @@ import { InstrumentIdentity } from "@/presentation/components/instrument-identit
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-export function HistoryScreen({ operations, securities, onValue, onCompare, compareEnabled, onVersement, onDca }: {
+export function HistoryScreen({ operations, securities, onValue, onCompare, compareEnabled, onVersement, onDca, onDcaDetails }: {
   operations: Operation[];
   securities: Security[];
   onValue: (operation: Operation) => void;
@@ -15,6 +15,7 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
   compareEnabled: boolean;
   onVersement: () => void;
   onDca: () => void;
+  onDcaDetails: (operation: Operation) => void;
 }) {
   return <>
     <PageHeading eyebrow="Votre journal" title="Opérations suivies" subtitle="Retrouvez les versements saisis et vos plans à versements réguliers (DCA)." />
@@ -48,6 +49,9 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
             <Text style={styles.allocationAmount}>{euro(line.amount)}</Text>
           </View>)}
         </View>
+        {operation.kind === "dca" ? <Pressable onPress={() => onDcaDetails(operation)} accessibilityRole="button" style={styles.managePlan}>
+          <Text style={styles.managePlanText}>Gérer le plan · voir les révisions</Text><Text style={styles.manageChevron}>›</Text>
+        </Pressable> : null}
         <View style={styles.actions}>
           <Pressable onPress={() => onValue(operation)} accessibilityRole="button" accessibilityLabel={`Valoriser ${operation.label} à une autre date`} style={({ pressed }) => [styles.actionButton, styles.actionButtonPrimary, pressed && styles.actionPressed]}>
             <Text style={styles.actionTitlePrimary}>Valoriser</Text>
@@ -84,6 +88,9 @@ const styles = StyleSheet.create({
   dot: { color: p.forestLight, fontSize: 8 },
   allocationName: { flex: 1, color: p.ink, fontSize: 12 },
   allocationAmount: { color: p.ink, fontSize: 12, fontWeight: "600" },
+  managePlan: { minHeight: 46, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: p.surfaceSubtle, borderRadius: 12 },
+  managePlanText: { color: p.forestLight, fontSize: 12, fontWeight: "700" },
+  manageChevron: { color: p.forestLight, fontSize: 22 },
   actions: { flexDirection: "row", gap: 9, borderTopWidth: 1, borderColor: p.line, paddingTop: 12 },
   actionButton: { flex: 1, minWidth: 0, minHeight: 64, borderRadius: 14, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, paddingVertical: 9, gap: 3 },
   actionButtonPrimary: { backgroundColor: p.forest },

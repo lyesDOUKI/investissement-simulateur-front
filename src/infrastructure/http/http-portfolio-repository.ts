@@ -1,4 +1,4 @@
-import type { CreateOperationInput, InvestmentComparison, InvestmentValuation, Operation, Portfolio, ScenarioInput, Security, ValueOperationInput } from "@/domain/models/operation";
+import type { ChangeDcaConfigurationInput, CreateOperationInput, DcaConfigurationRevision, InvestmentComparison, InvestmentValuation, Operation, Portfolio, ScenarioInput, Security, ValueOperationInput } from "@/domain/models/operation";
 import type { PortfolioRepository } from "@/domain/ports/portfolio-repository";
 import { Platform } from "react-native";
 
@@ -29,7 +29,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     }));
     for (const item of summary.dcaPlans ?? []) {
       const operation = this.summaryPlan(item);
-      dcaById.set(operation.id, operation);
+      if (!dcaById.has(operation.id)) dcaById.set(operation.id, operation);
     }
     const operations: Operation[] = [
       ...(payments.items ?? []).map((x: AnyObject) => this.payment(x)),
@@ -79,9 +79,27 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const operation = input.kind === "dca" ? this.plan(details) : this.payment(details);
     this.operations.set(operation.id, operation); return operation;
   }
+  async changeDcaConfiguration(input: ChangeDcaConfigurationInput): Promise<DcaConfigurationRevision> {
+    const allocations = input.allocations.map((allocation) => allocation.instrumentKind === "uc"
+      ? { instrumentKind: "UNIT_LINKED", isin: allocation.isin, amount: allocation.amount }
+      : { instrumentKind: "EURO_FUND", name: allocation.name ?? "Fonds euro", amount: allocation.amount });
+    const response = await this.request(`/dca-investments/${input.operationId}/configuration`, {
+      method: "PUT",
+      body: JSON.stringify({ amount: input.amount, allocations }),
+    });
+    const revision = this.configurationRevision(response);
+    const previous = this.operations.get(input.operationId);
+    if (previous) this.operations.set(input.operationId, {
+      ...previous,
+      amount: revision.monthlyAmount,
+      allocations: revision.allocations,
+      configurationHistory: [...(previous.configurationHistory ?? []), revision],
+    });
+    return revision;
+  }
   async valueOperation(id: string, input: ValueOperationInput): Promise<InvestmentValuation> {
     const op = this.operations.get(id) ?? await this.getById(id);
-    const availableIsins = new Set(op.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin));
+    const availableIsins = new Set([...op.allocations, ...(op.configurationHistory ?? []).flatMap((revision) => revision.allocations)].filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin));
     const projectionAssumptions = input.projectionAssumptions.filter((assumption) => availableIsins.has(assumption.isin));
     const path = op.kind === "dca" ? "dca-investments" : "one-time-payments";
     const x = await this.request(`/${path}/${id}/simulations`, { method: "POST", body: JSON.stringify({ valuationDate: dateIso(input.valuationDate), projectionAssumptions }) });
@@ -94,7 +112,8 @@ export class HttpPortfolioRepository implements PortfolioRepository {
   }
   private allocation(a: AnyObject, i: number) { return { id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.euroFundName, amount: a.amount ?? 0 }; }
   private payment(x: AnyObject): Operation { return { id: x.id, kind: "versement", label: "Versement réalisé", amount: x.amount, date: dateLocal(x.executionDate), detail: "Versement enregistré", allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
-  private plan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
+  private plan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)), configurationHistory: (x.configurationHistory ?? []).map((revision: AnyObject) => this.configurationRevision(revision)) }; }
+  private configurationRevision(x: AnyObject): DcaConfigurationRevision { return { revisionNumber: x.revisionNumber ?? 0, effectiveFromInstallmentNumber: x.effectiveFromInstallmentNumber ?? 0, recordedAt: dateLocal(x.recordedAt), monthlyAmount: x.monthlyAmount ?? 0, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => this.allocation(a, i)) }; }
   private summaryPlan(x: AnyObject): Operation { return { id: x.id, kind: "dca", label: "Plan mensuel", amount: x.monthlyAmount ?? 0, date: dateLocal(x.configuredAt), detail: `Échéance le ${x.paymentDay ?? 1} · délai ${x.businessDayDelay ?? 0} jours ouvrés`, executionDay: x.paymentDay, delayBusinessDays: x.businessDayDelay, allocations: (x.allocations ?? []).map((a: AnyObject, i: number) => ({ id: `line-${i}`, instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.name, amount: a.monthlyAmount ?? 0 })) }; }
   private valuation(x: AnyObject, kind: Operation["kind"]): InvestmentValuation {
     const allocation = (a: AnyObject) => ({ instrumentKind: a.instrumentKind === "EURO_FUND" ? "fonds-euro" as const : "uc" as const, isin: a.isin ?? "FONDS-EURO", symbol: a.symbol ?? null, name: a.name ?? a.euroFundName ?? a.isin ?? "Fonds euro", invested: a.invested ?? a.amount ?? 0, shares: a.shares ?? 0, averagePurchasePrice: a.averagePurchasePrice, observedPrice: a.observedPrice, observedDate: dateLocal(a.observedDate), value: a.value ?? 0, gain: a.gain ?? 0, status: valuationStatus(a.status), annualReturns: a.annualReturns ?? [], annualRates: a.annualRates ?? [] });
@@ -112,6 +131,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
       : { instrumentKind: "EURO_FUND", name: allocation.name ?? "Fonds euro", amount: allocation.amount });
     const allowedIsins = new Set([
       ...operation.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
+      ...(operation.configurationHistory ?? []).flatMap((revision) => revision.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin)),
       ...input.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
     ]);
     const projectionAssumptions = input.projectionAssumptions.filter((assumption) => allowedIsins.has(assumption.isin));

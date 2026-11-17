@@ -30,6 +30,16 @@ export interface Operation {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
+  configurationHistory?: DcaConfigurationRevision[];
+}
+
+/** A DCA configuration version, with its effective installment supplied by the API. */
+export interface DcaConfigurationRevision {
+  revisionNumber: number;
+  effectiveFromInstallmentNumber: number;
+  recordedAt: string;
+  monthlyAmount: number;
+  allocations: AllocationLine[];
 }
 
 /** Backend response DTO for a valuation; the front only renders these fields. */
@@ -131,6 +141,12 @@ export interface CreateOperationInput {
   allocations: AllocationLine[];
   executionDay?: number;
   delayBusinessDays?: number;
+}
+
+export interface ChangeDcaConfigurationInput {
+  operationId: string;
+  amount: number;
+  allocations: AllocationLine[];
 }
 
 export interface ValueOperationInput {

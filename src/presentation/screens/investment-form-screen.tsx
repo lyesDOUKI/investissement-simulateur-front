@@ -9,24 +9,27 @@ type ChangeField = AllocationDraftField;
 
 export function InvestmentFormScreen(props: {
   kind: "versement" | "dca"; total: string; lines: AllocationDraft[]; securities: Security[];
+  editingExistingPlan?: boolean;
   date: string; executionDay: string; delayBusinessDays: string; error: string;
   loading: boolean; autoSyncSingleSupport: boolean;
   onTotalChange: (value: string) => void; onLineChange: (id: string, field: ChangeField, value: string) => void;
   onAddLine: () => void; onRemoveLine: (id: string) => void; onDateChange: (value: string) => void;
   onExecutionDayChange: (value: string) => void; onDelayChange: (value: string) => void; onSubmit: () => void;
 }) {
-  const { kind, total, lines, securities, date, executionDay, delayBusinessDays, error } = props;
+  const { kind, total, lines, securities, date, executionDay, delayBusinessDays, error, editingExistingPlan = false } = props;
+  const editingDca = kind === "dca" && editingExistingPlan;
   const d = (line: AllocationDraft) => (field: ChangeField, value: string) => props.onLineChange(line.id, field, value);
   return <>
     <PageHeading eyebrow={kind === "dca" ? "Versements réguliers · DCA" : "Historique réel"}
-      title={kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
-      subtitle={kind === "dca" ? "Un plan DCA investit régulièrement sur les supports choisis. Saisissez son montant, son calendrier et sa répartition ; chaque échéance sera détaillée ensuite." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
+      title={editingDca ? "Modifier le plan DCA" : kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
+      subtitle={editingDca ? "Ajustez la mensualité et les supports. Les échéances déjà passées conserveront leur historique." : kind === "dca" ? "Un plan DCA investit régulièrement sur les supports choisis. Saisissez son montant, son calendrier et sa répartition ; chaque échéance sera détaillée ensuite." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
     <Card style={styles.card}>
       <TextField label={kind === "dca" ? "Montant à chaque échéance" : "Montant versé"} value={total}
         onChangeText={props.onTotalChange} placeholder="Ex. 500,00" keyboardType="decimal-pad" suffix="€" helper={kind === "dca" ? "Montant total investi chaque mois, réparti entre les supports ci-dessous." : "Montant total de ce versement déjà réalisé."} />
-      <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
+      {!editingDca ? <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
         onChange={props.onDateChange} helper={kind === "dca" ? "Date de mise en place du plan." : "Date à laquelle le versement a été exécuté chez votre courtier."} />
-      {kind === "dca" ? <>
+      : null}
+      {kind === "dca" && !editingDca ? <>
         <TextField label="Jour de l’échéance chaque mois" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" helper="Jour du mois qui sert de base au calcul des échéances." />
         <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" helper="Le service détermine la date d’exécution à partir de l’échéance et de ce délai." />
       </> : null}
@@ -54,11 +57,11 @@ export function InvestmentFormScreen(props: {
       <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" editable={!props.autoSyncSingleSupport} helper={props.autoSyncSingleSupport ? "100 % du montant total ; mis à jour automatiquement." : undefined} />
     </Card>)}
     <Pressable onPress={props.onAddLine} style={styles.add}><Text style={styles.addText}>＋ Ajouter un support</Text></Pressable>
-    <Card style={styles.summary}><Text style={styles.title}>À vérifier avant l’enregistrement</Text>
-      <Text style={styles.helper}>Chaque ligne correspond au montant affecté à un support. Vérifiez que leur somme correspond au montant du versement ou de chaque échéance.</Text></Card>
-    <Card style={styles.notice}><Text style={styles.noticeText}>{kind === "dca" ? "Cette fiche décrit votre plan. À la valorisation, le service détaille les achats par échéance. Aucun ordre n’est envoyé au courtier." : "Cette saisie conserve la trace d’un versement déjà réalisé. Aucun ordre n’est envoyé au courtier."}</Text></Card>
+    <Card style={styles.summary}><Text style={styles.title}>{editingDca ? "Vérifiez la nouvelle configuration" : "À vérifier avant l’enregistrement"}</Text>
+      <Text style={styles.helper}>{editingDca ? "Le montant mensuel doit correspondre au total réparti entre les supports." : "Chaque ligne correspond au montant affecté à un support. Vérifiez que leur somme correspond au montant du versement ou de chaque échéance."}</Text></Card>
+    <Card style={styles.notice}><Text style={styles.noticeText}>{editingDca ? "Cette modification crée une nouvelle révision à partir de la prochaine échéance concernée. Les achats passés restent consultables." : kind === "dca" ? "Cette fiche décrit votre plan. À la valorisation, le service détaille les achats par échéance. Aucun ordre n’est envoyé au courtier." : "Cette saisie conserve la trace d’un versement déjà réalisé. Aucun ordre n’est envoyé au courtier."}</Text></Card>
     {error ? <Text style={styles.error}>{error}</Text> : null}
-    <ActionButton label={kind === "dca" ? "Enregistrer le plan →" : "Enregistrer ce versement →"} onPress={props.onSubmit} loading={props.loading} />
+    <ActionButton label={editingDca ? "Enregistrer cette révision →" : kind === "dca" ? "Enregistrer le plan →" : "Enregistrer ce versement →"} onPress={props.onSubmit} loading={props.loading} />
   </>;
 }
 
