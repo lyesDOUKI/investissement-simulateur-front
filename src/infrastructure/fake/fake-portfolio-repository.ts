@@ -60,7 +60,7 @@ const demoPortfolio: Portfolio = {
   asOfDate: "14/11/2026", invested: 300, value: 289.96, gain: -10.04,
   gainRatePct: -3.35, oneOffInvested: 0,
   valuationStatus: "complete",
-  recentActivity: { type: "DCA_INSTALLMENT", operationId: demoPlan.id, date: "13/11/2026", amount: 100, label: "Échéance DCA exécutée", detail: "1 support acheté" },
+  recentActivity: { type: "DCA_INSTALLMENT", operationId: demoPlan.id, date: "13/11/2026", amount: 100, label: "Échéance DCA exécutée", detail: "1 support suivi" },
   operations: [demoPlan], valuations: [consoleLogResponse],
   holdings: [{ instrumentKind: "uc", isin: "FR0010380675", name: "MSCI World", invested: 300, shares: 0.096583, value: 289.96, sharePct: 100, status: "observed", observedDate: "13/11/2026", color: "#7EB89A" }],
 };
@@ -133,7 +133,7 @@ export class FakePortfolioRepository implements PortfolioRepository {
       id: "session-" + this.nextId++,
       label: input.kind === "dca" ? "Plan d’investissement enregistré" : "Versement enregistré",
       detail: input.kind === "dca"
-        ? "Paramètres de plan enregistrés · résultat fourni par l’adaptateur de démonstration"
+        ? "Paramètres de plan enregistrés · résultat fourni par le service de démonstration"
         : "Versement saisi dans le journal · aucun ordre transmis",
       ...(input.kind === "dca" ? { configurationHistory: [{ revisionNumber: 1, effectiveFromInstallmentNumber: 1, recordedAt: input.date, monthlyAmount: input.amount, allocations: input.allocations }] } : {}),
     };

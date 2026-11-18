@@ -25,7 +25,7 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
     || result?.installments.some((installment) => installment.nature === "projected" || installment.nature === "mixed" || installment.allocations.some((allocation) => allocation.status === "projected"));
 
   return <>
-    <PageHeading eyebrow="Résultat de valorisation" title={operation.kind === "dca" ? "Valeur de votre plan" : "Valeur de votre versement"} subtitle="Choisissez une date, puis consultez la valeur estimée de vos achats." />
+    <PageHeading eyebrow="Résultat de valorisation" title={operation.kind === "dca" ? "Valeur de votre plan" : "Valeur de votre versement"} subtitle="Choisissez une date, puis consultez la valeur estimée de vos versements." />
     <Card style={styles.source}>
       <Text style={styles.sourceTitle}>{operation.label}</Text>
       <Text style={styles.meta}>{operation.kind === "dca" ? "Plan mis en place le " : "Versement réalisé le "}{formatDateLabel(operation.date)} · {operation.kind === "dca" ? euro(operation.amount) + " / mois" : euro(operation.amount)}</Text>
@@ -39,8 +39,8 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
         <Text style={styles.parametersTitle}>Hypothèses de rendement</Text>
         <Text style={styles.meta}>Pour une date future, indiquez le rendement annuel envisagé pour chaque UC. Cette hypothèse sert uniquement aux projections du service ; elle ne prédit pas la performance réelle.</Text>
         {supports.map((support) => {
-          const title = support.name && support.name !== support.isin ? support.name : support.symbol ?? support.isin;
-          const label = [title, support.symbol && support.symbol !== title ? support.symbol : null, `ISIN ${support.isin}`].filter(Boolean).join(" · ");
+          const title = support.symbol ?? support.name ?? support.isin;
+          const label = [title, support.name && support.name !== title ? support.name : null, `ISIN ${support.isin}`].filter(Boolean).join(" · ");
           return <TextField key={support.isin} label={label} value={assumptions[support.isin] ?? "5"} onChangeText={(value) => onAssumptionChange(support.isin, value)} keyboardType="decimal-pad" suffix="% / an" />;
         })}
       </View> : null}
@@ -60,10 +60,10 @@ export function ValuationResultScreen({ operation, date, assumptions, result, er
         {operation.kind === "dca" ? <Text style={styles.heroLabel}>{result.installmentCount} échéances valorisées</Text> : null}
         {result.assumptionPct !== undefined ? <Text style={styles.heroLabel}>Hypothèse transmise : {result.assumptionPct} % / an</Text> : null}
       </Card>
-      <Text style={styles.resultExplanation}>{operation.kind === "dca" ? "Chaque échéance est valorisée avec la configuration qui lui était applicable. Les achats passés restent inchangés ; le service rassemble leur valeur à la date choisie." : "Les achats sont ceux enregistrés à leurs dates d’exécution. La valeur affichée correspond à la date choisie."}</Text>
+      <Text style={styles.resultExplanation}>{operation.kind === "dca" ? "Chaque échéance est valorisée avec la configuration qui lui était applicable. Les échéances passées restent inchangées ; le service de calcul rassemble leur valeur à la date choisie." : "Les parts enregistrées à la date d’exécution sont valorisées à la date choisie par le service de calcul."}</Text>
       {hasProjection ? <Card style={styles.projectionNote}><Text style={styles.projectionTitle}>Cette valorisation inclut des projections</Text><Text style={styles.warningText}>Selon le support, la valeur repose sur un cours de marché disponible ou sur une projection. Le détail indique la date du dernier cours utilisé et les hypothèses appliquées.</Text></Card> : null}
-      <Pressable onPress={onDetails} accessibilityRole="button" accessibilityLabel="Ouvrir le détail des achats et des échéances" style={styles.detailsLink}>
-        <View style={styles.detailsText}><Text style={styles.detailsTitle}>{operation.kind === "dca" ? "Voir le détail des échéances" : "Voir le détail du versement"}</Text><Text style={styles.meta}>{result.allocations.length} support{result.allocations.length === 1 ? "" : "s"}{operation.kind === "dca" ? ` · ${result.installmentCount} échéances` : " · parts et cours d’achat"}</Text></View>
+      <Pressable onPress={onDetails} accessibilityRole="button" accessibilityLabel="Ouvrir le détail des versements et des échéances" style={styles.detailsLink}>
+        <View style={styles.detailsText}><Text style={styles.detailsTitle}>{operation.kind === "dca" ? "Voir le détail des échéances" : "Voir le détail du versement"}</Text><Text style={styles.meta}>{result.allocations.length} support{result.allocations.length === 1 ? "" : "s"}{operation.kind === "dca" ? ` · ${result.installmentCount} échéances` : " · parts et cours de référence"}</Text></View>
         <Text style={styles.chevron}>›</Text>
       </Pressable>
       {result.hasMissingPrices ? <Card style={styles.warning}><Text style={styles.warningText}>Le service signale un ou plusieurs cours manquants. Certaines valeurs peuvent être indisponibles.</Text></Card> : null}

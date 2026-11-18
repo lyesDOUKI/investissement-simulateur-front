@@ -89,8 +89,8 @@ function ScenarioDetails({ scenario, isDca }: { scenario: ComparisonScenario; is
         <SummaryMetric label="Montant placé" value={euro(allocation.invested)} />
         {allocation.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(allocation.shares)} /> : null}
         {allocation.observedDate || allocation.observedPrice !== null ? <SummaryMetric label={`Dernier cours disponible${allocation.observedDate ? ` · ${formatDateLabel(allocation.observedDate)}` : ""}`} value={euro(allocation.observedPrice)} /> : null}
-        {allocation.averagePurchasePrice !== null ? <SummaryMetric label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
-        <SummaryMetric label="Prix d’achat obtenu avec" value={statusLabel(allocation.purchaseStatus)} />
+        {allocation.averagePurchasePrice !== null ? <SummaryMetric label="Cours moyen de référence" value={euro(allocation.averagePurchasePrice)} /> : null}
+        <SummaryMetric label="Cours de référence obtenu avec" value={statusLabel(allocation.purchaseStatus)} />
         <SummaryMetric label={`Valeur à la date cible · ${formatDateLabel(valuation.valuationDate)}`} value={euro(allocation.value)} />
         <SummaryMetric label="Valeur calculée à partir de" value={statusLabel(allocation.status)} />
         <SummaryMetric label="Gain / perte" value={euro(allocation.gain)} />
@@ -125,8 +125,8 @@ function InstallmentCard({ installment, valuationDate }: { installment: Comparis
       <View style={styles.allocationHeader}><InstrumentIdentity name={line.name} symbol={line.symbol} isin={line.isin} fallback="Fonds euro" titleStyle={styles.allocationTitle} metaStyle={styles.meta} /><StatusBadge status={line.status} /></View>
       <SummaryMetric label={line.status === "not-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
       {line.instrumentKind === "uc" ? <SummaryMetric label="Parts acquises" value={units(line.shares)} /> : null}
-      <SummaryMetric label={`Prix à l’achat${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
-      {line.status !== "not-executed" ? <SummaryMetric label="Prix d’achat obtenu avec" value={statusLabel(line.purchaseStatus)} /> : null}
+      <SummaryMetric label={`Cours lors de l’exécution${line.purchasePriceDate ? ` · ${formatDateLabel(line.purchasePriceDate)}` : ""}`} value={line.status === "not-executed" ? "À déterminer à l’exécution" : euro(line.purchasePrice)} />
+      {line.status !== "not-executed" ? <SummaryMetric label="Cours de référence obtenu avec" value={statusLabel(line.purchaseStatus)} /> : null}
       <SummaryMetric label={`Valeur à la date cible · ${formatDateLabel(valuationDate)}`} value={euro(line.value)} />
       <SummaryMetric label="Valeur calculée à partir de" value={statusLabel(line.status)} />
       <SummaryMetric label="Gain / perte" value={euro(line.gain)} />

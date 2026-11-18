@@ -20,7 +20,7 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
     {result.hasMissingPrices ? <Card style={styles.warning}><Text style={styles.warningText}>Le service signale un ou plusieurs cours manquants. Certaines valeurs peuvent être indisponibles.</Text></Card> : null}
     {result.allocations.some((a) => a.instrumentKind === "uc") ? <Card style={styles.education}>
       <Text style={styles.educationTitle}>Comprendre les parts</Text>
-      <Text style={styles.educationText}>Une part est une fraction de votre placement sur un support. Le nombre acheté à chaque date reste dans votre historique ; sa valeur évolue avec le cours.</Text>
+      <Text style={styles.educationText}>Une part est une fraction de votre placement sur un support. Le nombre de parts enregistré à chaque date reste dans votre historique ; sa valeur évolue avec le cours.</Text>
     </Card> : null}
 
     <SectionTitle title={operation.kind === "dca" ? "Synthèse par support" : "Détail du versement"} />
@@ -29,11 +29,11 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
       <View style={styles.badgeRow}><StatusBadge status={allocation.status} /></View>
       <Row label="Montant placé" value={euro(allocation.invested)} />
       {allocation.instrumentKind === "uc" ? <Row label={operation.kind === "dca" ? "Parts acquises au total" : "Parts acquises le " + formatDateLabel(operation.date)} value={units(allocation.shares)} /> : <Text style={styles.meta}>Valeur du fonds euro estimée par le service</Text>}
-      {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <Row label="Prix moyen d’achat" value={euro(allocation.averagePurchasePrice)} /> : null}
+      {allocation.instrumentKind === "uc" && allocation.averagePurchasePrice !== undefined ? <Row label="Cours moyen de référence" value={euro(allocation.averagePurchasePrice)} /> : null}
       {allocation.status === "observed" && allocation.observedDate ? <Row label={`Dernier cours disponible · ${formatDateLabel(allocation.observedDate)}`} value={allocation.observedPrice === undefined ? "Indisponible" : euro(allocation.observedPrice)} /> : null}
       {allocation.status === "projected" ? <ProjectionAssumptions allocation={allocation} /> : null}
       <Row label={`Valeur à la date cible · ${formatDateLabel(result.valuationDate)}`} value={euro(allocation.value)} />
-      <View style={styles.row}><Text style={styles.meta}>Gain / perte depuis les achats</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
+      <View style={styles.row}><Text style={styles.meta}>Gain / perte depuis les versements</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
     </Card>)}
 
     {result.installments.length > 0 ? <>
@@ -48,7 +48,7 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
           {line.instrumentKind === "fonds-euro" ? <Text style={styles.meta}>Fonds euro</Text> : null}
           <Row label={installment.nature === "not-yet-executed" ? "Montant prévu" : "Montant placé"} value={euro(line.amount)} />
           {line.instrumentKind === "uc" ? <Row label={installment.nature === "not-yet-executed" ? "Parts prévues" : "Parts acquises"} value={line.shares === null ? installment.nature === "not-yet-executed" ? "À déterminer à l’exécution" : "Indisponible" : units(line.shares)} /> : null}
-          {line.instrumentKind === "uc" ? <Row label={`Prix à l’achat${line.purchasePriceDate ? " · " + formatDateLabel(line.purchasePriceDate) : ""}`} value={line.purchasePrice === undefined ? installment.nature === "not-yet-executed" ? "À déterminer à l’exécution" : "Indisponible" : euro(line.purchasePrice)} /> : null}
+          {line.instrumentKind === "uc" ? <Row label={`Cours lors de l’exécution${line.purchasePriceDate ? " · " + formatDateLabel(line.purchasePriceDate) : ""}`} value={line.purchasePrice === undefined ? installment.nature === "not-yet-executed" ? "À déterminer à l’exécution" : "Indisponible" : euro(line.purchasePrice)} /> : null}
           {line.value !== undefined ? <Row label={`Valeur à la date cible · ${formatDateLabel(result.valuationDate)}`} value={euro(line.value)} /> : null}
           {line.gain !== undefined ? <Row label="Gain / perte sur cette échéance" value={`${line.gain >= 0 ? "+" : ""}${euro(line.gain)}`} valueStyle={line.gain >= 0 ? styles.positive : styles.negative} /> : null}
           {line.status === "projected" ? <InstallmentAssumptions line={line} /> : null}

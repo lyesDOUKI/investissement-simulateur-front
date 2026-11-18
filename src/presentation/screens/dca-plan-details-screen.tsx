@@ -38,7 +38,7 @@ export function DcaPlanDetailsScreen({ operation, securities, confirmation, onEd
       <Text style={styles.sectionLabel}>Répartition de cette version</Text>
       <AllocationRows allocations={revision.allocations} securities={securities} />
     </Card>)}
-    <Card style={styles.note}><Text style={styles.noteTitle}>Comment lire cet historique</Text><Text style={styles.noteText}>Une révision ne modifie pas les achats déjà effectués. Les échéances suivantes utilisent les paramètres valables à leur numéro d’échéance ; la valorisation applique ces versions côté service.</Text></Card>
+    <Card style={styles.note}><Text style={styles.noteTitle}>Comment lire cet historique</Text><Text style={styles.noteText}>Une révision ne modifie pas les échéances déjà enregistrées. Les échéances suivantes utilisent les paramètres valables à leur numéro d’échéance ; la valorisation applique ces versions côté service de calcul.</Text></Card>
   </>;
 }
 

@@ -105,8 +105,8 @@ export function ScenarioFormScreen(props: {
         <Pill label="Fonds euro" active={line.instrumentKind === "fonds-euro"} onPress={() => update(line, "instrumentKind", "fonds-euro")} />
       </View>
       {line.instrumentKind === "uc" ? <>
-        <Text style={styles.helper}>Le symbole est le code court du support ; l’ISIN est son identifiant complet.</Text>
-        <TextField label="Code ISIN" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. FR0010380675" autoCapitalize="characters" helper="Saisissez un ISIN ou choisissez un support déjà suivi ci-dessous." />
+        <Text style={styles.helper}>Recherchez par symbole, nom ou ISIN. Le symbole facilite la lecture ; l’ISIN identifie précisément le support transmis au service.</Text>
+        <TextField label="Rechercher un support" value={line.isin} onChangeText={(value) => update(line, "isin", value.toUpperCase().replace(/\s/g, ""))} placeholder="Ex. AF.PA, MSCI World ou FR…" autoCapitalize="characters" helper="Sélectionnez un support déjà suivi ou renseignez son ISIN complet." />
         {securities.length > 0 ? <View style={styles.securitySuggestions}>
           <Text style={styles.helper}>Supports déjà suivis</Text>
           {securities.map((security) => <Pressable key={security.isin} accessibilityRole="button" accessibilityLabel={`Choisir ${security.name}, ${security.symbol ? `symbole ${security.symbol}, ` : ""}ISIN ${security.isin}`} onPress={() => update(line, "isin", security.isin)} style={styles.securitySuggestion}>
@@ -129,11 +129,11 @@ export function ScenarioFormScreen(props: {
         const scenarios = inA && inB ? "A et B" : inA ? "A" : "B";
         const symbol = supportSymbol(isin);
         const support = supportName(isin);
-        const label = `${support}${symbol && symbol !== support ? ` · ${symbol}` : ""} · ISIN ${isin} · Scénario ${scenarios}`;
+        const label = `${symbol ?? support} · ${symbol && symbol !== support ? `${support} · ` : ""}ISIN ${isin} · Scénario ${scenarios}`;
         return <TextField key={isin} label={label} value={props.assumptions[isin] ?? ""}
           onChangeText={(value) => props.onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" placeholder="Ex. 6" />;
       })}
-      <Text style={styles.helper}>Le fonds euro conserve le taux de l’adapter ; aucune hypothèse n’est à saisir pour lui.</Text>
+      <Text style={styles.helper}>Pour le fonds euro, le service de calcul applique son taux prévu ; aucune hypothèse n’est à saisir.</Text>
     </Card> : null}
     <Card style={styles.note}><Text style={styles.noteTitle}>Une comparaison utile</Text><Text style={styles.helper}>Le résultat présente côte à côte l’effort investi, les valeurs retournées et les écarts. Il ne désigne pas un plan « meilleur » sans tenir compte de vos critères.</Text></Card>
     {props.error ? <Text style={styles.error}>{props.error}</Text> : null}

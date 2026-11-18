@@ -16,14 +16,14 @@ export function InstrumentIdentity({
   titleStyle?: StyleProp<TextStyle>;
   metaStyle?: StyleProp<TextStyle>;
 }) {
-  const title = name && name !== isin && name !== symbol ? name : symbol ?? name ?? isin ?? fallback;
-  const displayedSymbol = symbol && symbol !== title ? symbol : null;
+  const title = symbol ?? name ?? isin ?? fallback;
+  const displayedName = name && name !== title && name !== isin ? name : null;
   const displayedIsin = isin && isin !== symbol ? isin : null;
 
   return <View style={styles.identity}>
     <Text style={[styles.title, titleStyle]} numberOfLines={2}>{title}</Text>
-    {displayedSymbol || displayedIsin ? <View style={styles.identifiers}>
-      {displayedSymbol ? <Text style={styles.symbol}>{displayedSymbol}</Text> : null}
+    {displayedName || displayedIsin ? <View style={styles.identifiers}>
+      {displayedName ? <Text style={[styles.name, metaStyle]} numberOfLines={1}>{displayedName}</Text> : null}
       {displayedIsin ? <Text style={[styles.isin, metaStyle]}>ISIN {displayedIsin}</Text> : null}
     </View> : null}
   </View>;
@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   identity: { flex: 1, minWidth: 0, gap: 3 },
   title: { color: p.ink, fontSize: 13, fontWeight: "600" },
   identifiers: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
-  symbol: { color: p.forestLight, fontSize: 10, fontWeight: "800", letterSpacing: 0.3 },
+  name: { color: p.muted, fontSize: 10 },
   isin: { color: p.muted, fontSize: 10 },
 });
