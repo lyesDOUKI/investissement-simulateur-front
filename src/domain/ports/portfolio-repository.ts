@@ -1,6 +1,8 @@
 import type {
   CreateOperationInput,
   ChangeDcaConfigurationInput,
+  CompareDcaRevisionsInput,
+  DcaRevisionComparison,
   DcaConfigurationRevision,
   InvestmentComparison,
   InvestmentValuation,
@@ -17,6 +19,7 @@ export interface PortfolioRepository {
   getSecurities(): Promise<Security[]>;
   createOperation(input: CreateOperationInput): Promise<Operation>;
   changeDcaConfiguration(input: ChangeDcaConfigurationInput): Promise<DcaConfigurationRevision>;
+  compareDcaRevisions(input: CompareDcaRevisionsInput): Promise<DcaRevisionComparison>;
   valueOperation(operationId: string, input: ValueOperationInput): Promise<InvestmentValuation>;
   compareOperation(operationId: string, input: ScenarioInput): Promise<InvestmentComparison>;
 }

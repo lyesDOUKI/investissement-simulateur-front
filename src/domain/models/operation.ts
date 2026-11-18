@@ -178,6 +178,20 @@ export interface InvestmentComparison {
   };
 }
 
+export interface CompareDcaRevisionsInput {
+  operationId: string;
+  revisionA: number;
+  revisionB: number;
+  valuationDate: string;
+  projectionAssumptions: { isin: string; symbol?: string | null; annualReturn: number }[];
+}
+
+export interface DcaRevisionComparison extends InvestmentComparison {
+  projectionStartInstallmentNumber: number;
+  originalRevisionNumber: number;
+  alternativeRevisionNumber: number;
+}
+
 export interface ComparisonScenario {
   operationId: string | null;
   parameters: ComparisonParameters;

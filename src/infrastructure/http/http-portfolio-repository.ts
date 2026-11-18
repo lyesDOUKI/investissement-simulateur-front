@@ -1,4 +1,4 @@
-import type { ChangeDcaConfigurationInput, CreateOperationInput, DcaConfigurationRevision, InvestmentComparison, InvestmentValuation, Operation, Portfolio, ScenarioInput, Security, ValueOperationInput } from "@/domain/models/operation";
+import type { ChangeDcaConfigurationInput, CompareDcaRevisionsInput, CreateOperationInput, DcaConfigurationRevision, DcaRevisionComparison, InvestmentComparison, InvestmentValuation, Operation, Portfolio, ScenarioInput, Security, ValueOperationInput } from "@/domain/models/operation";
 import type { PortfolioRepository } from "@/domain/ports/portfolio-repository";
 import { Platform } from "react-native";
 
@@ -146,6 +146,31 @@ export class HttpPortfolioRepository implements PortfolioRepository {
     const path = operation.kind === "dca" ? `/dca-investments/${id}/comparisons` : `/one-time-payments/${id}/comparisons`;
     const response = await this.request(path, { method: "POST", body: JSON.stringify(request) });
     return this.comparison(response);
+  }
+
+  async compareDcaRevisions(input: CompareDcaRevisionsInput): Promise<DcaRevisionComparison> {
+    const response = await this.request(`/dca-investments/${input.operationId}/revision-comparisons`, {
+      method: "POST",
+      body: JSON.stringify({
+        revisionA: input.revisionA,
+        revisionB: input.revisionB,
+        valuationDate: dateIso(input.valuationDate),
+        projectionAssumptions: input.projectionAssumptions,
+      }),
+    });
+    const mapped = this.comparison({
+      valuationDate: response.valuationDate,
+      valuationStatus: response.valuationStatus,
+      original: { ...response.original, operationId: input.operationId },
+      alternative: { ...response.alternative, operationId: input.operationId },
+      difference: response.difference,
+    });
+    return {
+      ...mapped,
+      projectionStartInstallmentNumber: response.projectionStartInstallmentNumber,
+      originalRevisionNumber: response.original?.revisionNumber ?? input.revisionA,
+      alternativeRevisionNumber: response.alternative?.revisionNumber ?? input.revisionB,
+    };
   }
 
   private comparison(x: AnyObject): InvestmentComparison {

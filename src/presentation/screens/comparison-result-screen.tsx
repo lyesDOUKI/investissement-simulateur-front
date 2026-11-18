@@ -11,15 +11,18 @@ const signedEuro = (value: number | null) => value === null ? "Indisponible" : `
 const units = (value: number | null) => value === null ? "—" : value.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
 const rate = (value: number) => `${(value * 100).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} % / an`;
 
-export function ComparisonResultScreen({ operation, result, onAdjust }: {
+export function ComparisonResultScreen({ operation, result, onAdjust, scenarioTitles, projectionStartInstallmentNumber, isRevisionComparison = false }: {
   operation: Operation;
   result: InvestmentComparison;
   onAdjust: () => void;
+  scenarioTitles?: { original: string; alternative: string };
+  projectionStartInstallmentNumber?: number;
+  isRevisionComparison?: boolean;
 }) {
   const wide = useWindowDimensions().width >= 760;
   const isDca = operation.kind === "dca";
   return <>
-    <PageHeading eyebrow="Résultat de simulation" title="Comparer les deux scénarios" subtitle="A et B sont valorisés à la même date. Commencez par l’écart, puis ouvrez les détails si vous voulez comprendre ce qui le compose." />
+    <PageHeading eyebrow="Résultat de simulation" title={scenarioTitles ? "Comparer deux révisions" : "Comparer les deux scénarios"} subtitle="Les deux scénarios sont valorisés à la même date. Commencez par l’écart, puis ouvrez les détails pour comprendre ce qui le compose." />
 
     <Card style={styles.resultCard}>
       <Text style={styles.resultEyebrow}>ÉCART · B − A</Text>
@@ -34,29 +37,31 @@ export function ComparisonResultScreen({ operation, result, onAdjust }: {
         <DifferenceMetric label="Écart de rendement" value={result.difference.gainRatePercentagePoints} suffix=" pts" />
       </View>
     </Card>
+    {projectionStartInstallmentNumber !== undefined ? <Text style={styles.projectionStart}>Les deux révisions sont appliquées à partir de l’échéance n°{projectionStartInstallmentNumber}.</Text> : null}
     <View style={styles.topAction}><ActionButton label="Modifier les hypothèses" tone="light" onPress={onAdjust} /></View>
 
     <SectionTitle title="Les deux scénarios" action={<Text style={styles.commonDate}>Même date · {formatDateLabel(result.valuationDate)}</Text>} />
     <View style={[styles.scenarios, wide && styles.scenariosWide]}>
-      <ScenarioCard title={`A · ${isDca ? "Plan de référence" : "Versement de référence"}`} scenario={result.original} isDca={isDca} />
-      <ScenarioCard title={`B · ${isDca ? "Plan alternatif" : "Versement alternatif"}`} scenario={result.alternative} isDca={isDca} highlighted />
+      <ScenarioCard title={scenarioTitles?.original ?? `A · ${isDca ? "Plan de référence" : "Versement de référence"}`} scenario={result.original} isDca={isDca} tag={isRevisionComparison ? "RÉVISION" : "ENREGISTRÉ"} />
+      <ScenarioCard title={scenarioTitles?.alternative ?? `B · ${isDca ? "Plan alternatif" : "Versement alternatif"}`} scenario={result.alternative} isDca={isDca} highlighted tag={isRevisionComparison ? "RÉVISION" : "HYPOTHÈSE"} />
     </View>
 
-    <Text style={styles.disclaimer}>Le scénario B reste une hypothèse : il n’est pas ajouté à votre journal et aucun ordre n’est transmis au courtier.</Text>
+    <Text style={styles.disclaimer}>{isRevisionComparison ? "Cette simulation ne modifie pas le plan et ne transmet aucun ordre au courtier." : "Le scénario B reste une hypothèse : il n’est pas ajouté à votre journal et aucun ordre n’est transmis au courtier."}</Text>
   </>;
 }
 
-function ScenarioCard({ title, scenario, isDca, highlighted = false }: {
+function ScenarioCard({ title, scenario, isDca, highlighted = false, tag }: {
   title: string;
   scenario: ComparisonScenario;
   isDca: boolean;
   highlighted?: boolean;
+  tag: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const valuation = scenario.valuation;
   const parameters = scenario.parameters;
   return <Card style={[styles.scenario, highlighted && styles.scenarioHighlighted]}>
-    <View style={styles.scenarioHeader}><Text style={styles.scenarioTitle}>{title}</Text><Text style={[styles.scenarioTag, highlighted && styles.alternativeTag]}>{highlighted ? "HYPOTHÈSE" : "ENREGISTRÉ"}</Text></View>
+    <View style={styles.scenarioHeader}><Text style={styles.scenarioTitle}>{title}</Text><Text style={[styles.scenarioTag, highlighted && styles.alternativeTag]}>{tag}</Text></View>
     <Text style={styles.scenarioValue}>{euro(valuation.value)}</Text>
     <Text style={styles.meta}>Valeur à la date cible · {formatDateLabel(valuation.valuationDate)}</Text>
     <Text style={styles.scenarioSetup}>{scenarioSetup(parameters, isDca)}</Text>
@@ -195,7 +200,7 @@ const styles = StyleSheet.create({
   partialNote: { color: p.warningText, fontSize: 11, lineHeight: 16 },
   metrics: { flexDirection: "row", alignItems: "stretch", marginTop: 6, paddingTop: 12, borderTopWidth: 1, borderColor: "#46695C" },
   differenceMetric: { flex: 1, gap: 4, paddingHorizontal: 8 }, differenceMetricLabel: { color: "#B6C9BF", fontSize: 10, lineHeight: 14 }, differenceMetricValue: { color: p.onForest, fontSize: 12, fontWeight: "700" }, metricDivider: { width: 1, backgroundColor: "#46695C" },
-  commonDate: { color: p.forestLight, fontSize: 11, fontWeight: "600" }, scenarios: { gap: 10 }, scenariosWide: { flexDirection: "row", alignItems: "flex-start" },
+  commonDate: { color: p.forestLight, fontSize: 11, fontWeight: "600" }, projectionStart: { color: p.muted, fontSize: 12, lineHeight: 17, marginTop: 3 }, scenarios: { gap: 10 }, scenariosWide: { flexDirection: "row", alignItems: "flex-start" },
   scenario: { flex: 1, gap: 7 }, scenarioHighlighted: { borderColor: p.forestLight, borderWidth: 1.5 }, scenarioHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }, scenarioTitle: { color: p.ink, fontSize: 14, fontWeight: "700", flex: 1 }, scenarioTag: { color: p.muted, fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }, alternativeTag: { color: p.forestLight }, scenarioValue: { color: p.ink, fontSize: 25, fontWeight: "800", letterSpacing: -0.5, marginTop: 2 }, scenarioSetup: { color: p.muted, fontSize: 11, lineHeight: 16 },
   summaryRows: { flexDirection: "row", gap: 8, marginTop: 2 }, summaryMetric: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 8 }, summaryValue: { color: p.ink, fontSize: 11, fontWeight: "700", textAlign: "right" }, compactMetric: { flex: 1, gap: 3, padding: 8, borderRadius: 10, backgroundColor: p.surfaceSubtle }, compactLabel: { color: p.muted, fontSize: 10 }, compactValue: { color: p.ink, fontSize: 12, fontWeight: "700" },
   disclosure: { minHeight: 42, marginTop: 3, paddingTop: 8, borderTopWidth: 1, borderColor: p.line, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, disclosureText: { color: p.forestLight, fontSize: 12, fontWeight: "700" }, disclosureIcon: { color: p.forestLight, fontSize: 20, fontWeight: "500" },

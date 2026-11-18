@@ -1,4 +1,5 @@
 import { CompareInvestment } from "@/application/use-cases/compare-investment";
+import { CompareDcaRevisions } from "@/application/use-cases/compare-dca-revisions";
 import { ConnectDemoSession } from "@/application/use-cases/connect-demo-session";
 import { CreateOperation } from "@/application/use-cases/create-operation";
 import { ChangeDcaConfiguration } from "@/application/use-cases/change-dca-configuration";
@@ -29,4 +30,5 @@ export const dependencies = {
   changeDcaConfiguration: new ChangeDcaConfiguration(portfolioRepository),
   valueInvestment: new ValueInvestment(portfolioRepository),
   compareInvestment: new CompareInvestment(portfolioRepository),
+  compareDcaRevisions: new CompareDcaRevisions(portfolioRepository),
 };

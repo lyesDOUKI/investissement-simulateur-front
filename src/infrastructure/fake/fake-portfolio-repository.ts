@@ -1,5 +1,7 @@
 import type {
   CreateOperationInput,
+  CompareDcaRevisionsInput,
+  DcaRevisionComparison,
   ChangeDcaConfigurationInput,
   DcaConfigurationRevision,
   InvestmentComparison,
@@ -188,6 +190,27 @@ export class FakePortfolioRepository implements PortfolioRepository {
       difference: operationId === demoPlan.id
         ? { invested: 100, value: 136.84, gain: 36.84, gainRatePercentagePoints: 10.05 }
         : { invested: -100, value: -85.6, gain: 14.4, gainRatePercentagePoints: 4.22 },
+    };
+  }
+
+  async compareDcaRevisions(input: CompareDcaRevisionsInput): Promise<DcaRevisionComparison> {
+    await waitForDemoResponse();
+    const operation = this.operations.find((item) => item.id === input.operationId) ?? demoPlan;
+    const revisions = operation.configurationHistory ?? demoPlan.configurationHistory ?? [];
+    const revisionA = revisions.find((revision) => revision.revisionNumber === input.revisionA) ?? revisions[0];
+    const revisionB = revisions.find((revision) => revision.revisionNumber === input.revisionB) ?? revisions[revisions.length - 1];
+    if (!revisionA || !revisionB) throw new Error("Les révisions sélectionnées ne sont pas disponibles dans les données de démonstration.");
+    const original = fakeComparisonScenario(operation, { ...genericValuation, operationId: operation.id, valuationDate: input.valuationDate }, revisionA.allocations, operation.date, revisionA.monthlyAmount, operation.executionDay, operation.delayBusinessDays, input.projectionAssumptions);
+    const alternative = fakeComparisonScenario(operation, { ...genericAlternative, operationId: operation.id, valuationDate: input.valuationDate }, revisionB.allocations, operation.date, revisionB.monthlyAmount, operation.executionDay, operation.delayBusinessDays, input.projectionAssumptions);
+    return {
+      valuationDate: input.valuationDate,
+      valuationStatus: "complete",
+      original,
+      alternative,
+      difference: { invested: 0, value: 14.4, gain: 14.4, gainRatePercentagePoints: 2.8 },
+      projectionStartInstallmentNumber: 4,
+      originalRevisionNumber: revisionA.revisionNumber,
+      alternativeRevisionNumber: revisionB.revisionNumber,
     };
   }
 }

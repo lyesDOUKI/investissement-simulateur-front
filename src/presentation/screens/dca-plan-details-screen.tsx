@@ -7,11 +7,13 @@ import { palette as p } from "@/presentation/theme";
 
 const euro = (value: number) => value.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 
-export function DcaPlanDetailsScreen({ operation, securities, confirmation, onEdit }: {
+export function DcaPlanDetailsScreen({ operation, securities, confirmation, comparisonEnabled, onEdit, onCompareRevisions }: {
   operation: Operation;
   securities: Security[];
   confirmation: DcaConfigurationRevision | null;
+  comparisonEnabled: boolean;
   onEdit: () => void;
+  onCompareRevisions: () => void;
 }) {
   const revisions = [...(operation.configurationHistory ?? [])].sort((a, b) => b.revisionNumber - a.revisionNumber);
   return <>
@@ -38,6 +40,9 @@ export function DcaPlanDetailsScreen({ operation, securities, confirmation, onEd
       <Text style={styles.sectionLabel}>Répartition de cette version</Text>
       <AllocationRows allocations={revision.allocations} securities={securities} />
     </Card>)}
+    {comparisonEnabled && revisions.length > 1 ? <Pressable onPress={onCompareRevisions} accessibilityRole="button" style={({ pressed }) => [styles.compareButton, pressed && styles.pressed]}>
+      <View style={styles.compareCopy}><Text style={styles.compareTitle}>Comparer deux révisions</Text><Text style={styles.meta}>Simuler deux configurations à une même date future</Text></View><Text style={styles.compareArrow}>›</Text>
+    </Pressable> : null}
     <Card style={styles.note}><Text style={styles.noteTitle}>Comment lire cet historique</Text><Text style={styles.noteText}>Une révision ne modifie pas les échéances déjà enregistrées. Les échéances suivantes utilisent les paramètres valables à leur numéro d’échéance ; la valorisation applique ces versions côté service de calcul.</Text></Card>
   </>;
 }
@@ -80,6 +85,10 @@ const styles = StyleSheet.create({
   effectiveLabel: { color: p.muted, fontSize: 12 },
   effectiveValue: { color: p.forestLight, fontSize: 13, fontWeight: "800" },
   note: { gap: 6, backgroundColor: p.surfaceSubtle, marginTop: 6 },
+  compareButton: { minHeight: 68, paddingHorizontal: 16, paddingVertical: 12, marginTop: 8, marginBottom: 12, borderRadius: 16, backgroundColor: p.forest, flexDirection: "row", alignItems: "center", gap: 12 },
+  compareCopy: { flex: 1, gap: 4 },
+  compareTitle: { color: p.onForest, fontSize: 14, fontWeight: "700" },
+  compareArrow: { color: p.mint, fontSize: 25, fontWeight: "600" },
   noteTitle: { color: p.ink, fontSize: 13, fontWeight: "700" },
   noteText: { color: p.muted, fontSize: 12, lineHeight: 18 },
 });
