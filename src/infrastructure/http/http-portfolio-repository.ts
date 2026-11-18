@@ -100,7 +100,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
   async valueOperation(id: string, input: ValueOperationInput): Promise<InvestmentValuation> {
     const op = this.operations.get(id) ?? await this.getById(id);
     const availableIsins = new Set([...op.allocations, ...(op.configurationHistory ?? []).flatMap((revision) => revision.allocations)].filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin));
-    const projectionAssumptions = input.projectionAssumptions.filter((assumption) => availableIsins.has(assumption.isin));
+    const projectionAssumptions = normalizeProjectionAssumptions(input.projectionAssumptions.filter((assumption) => availableIsins.has(assumption.isin)));
     const path = op.kind === "dca" ? "dca-investments" : "one-time-payments";
     const x = await this.request(`/${path}/${id}/simulations`, { method: "POST", body: JSON.stringify({ valuationDate: dateIso(input.valuationDate), projectionAssumptions }) });
     return this.valuation(x, op.kind);
@@ -134,7 +134,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
       ...(operation.configurationHistory ?? []).flatMap((revision) => revision.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin)),
       ...input.allocations.filter((allocation) => allocation.instrumentKind === "uc").map((allocation) => allocation.isin),
     ]);
-    const projectionAssumptions = input.projectionAssumptions.filter((assumption) => allowedIsins.has(assumption.isin));
+    const projectionAssumptions = normalizeProjectionAssumptions(input.projectionAssumptions.filter((assumption) => allowedIsins.has(assumption.isin)));
     const alternative = operation.kind === "dca"
       ? { date: dateIso(input.startDate), amount: input.amount, executionDay: input.executionDay, delayBusinessDays: input.delayBusinessDays, allocations }
       : { date: dateIso(input.startDate), amount: input.amount, allocations };
@@ -155,7 +155,7 @@ export class HttpPortfolioRepository implements PortfolioRepository {
         revisionA: input.revisionA,
         revisionB: input.revisionB,
         valuationDate: dateIso(input.valuationDate),
-        projectionAssumptions: input.projectionAssumptions,
+        projectionAssumptions: normalizeProjectionAssumptions(input.projectionAssumptions),
       }),
     });
     const mapped = this.comparison({
@@ -258,6 +258,15 @@ export class HttpPortfolioRepository implements PortfolioRepository {
       },
     };
   }
+}
+
+function normalizeProjectionAssumptions<T extends { annualReturn: number }>(assumptions: T[]): T[] {
+  return assumptions.map((assumption) => {
+    if (!Number.isFinite(assumption.annualReturn)) throw new Error("Chaque hypothèse de rendement doit être un nombre valide.");
+    // JavaScript floats can stringify with extra digits (for example 0.17329999999999998).
+    // The API accepts at most eight fractional digits for annualReturn.
+    return { ...assumption, annualReturn: Number(assumption.annualReturn.toFixed(8)) };
+  });
 }
 
 function valuationStatus(status?: string): "observed" | "projected" | "missing" {
