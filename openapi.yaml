@@ -702,7 +702,7 @@ components:
         properties:
           isin:
             type: string
-            pattern: "^[A-Z0-9]{12}$"
+            pattern: "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
           amount:
             type: number
       description: Allocation vers une unité de compte identifiée par son ISIN
@@ -844,7 +844,7 @@ components:
           type: string
           description: Code ISIN du support
           example: IE00B4L5Y983
-          pattern: "^[A-Z0-9]{12}$"
+          pattern: "^[A-Z]{2}[A-Z0-9]{9}[0-9]$"
         annualReturn:
           type: number
           description: "Taux sous forme décimale : 0.05 signifie 5 %, -0.10 signifie\
