@@ -41,3 +41,10 @@ example
 # generated native folders
 /ios
 /android
+/.env
+/.idea/.gitignore
+/.idea/gradle.xml
+/.idea/investissement-simulateur-front.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
