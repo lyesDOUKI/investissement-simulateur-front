@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { Operation, Security } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, SectionTitle, text } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
@@ -17,12 +17,14 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
   onDca: () => void;
   onDcaDetails: (operation: Operation) => void;
 }) {
+  const viewportWidth = useWindowDimensions().width;
+  const wide = Platform.OS !== "web" && viewportWidth >= 760;
   return <>
     <PageHeading eyebrow="Votre journal" title="Opérations suivies" subtitle="Retrouvez les versements saisis et vos plans à versements réguliers (DCA)." />
-    <Card style={styles.addCard}>
-      <Text style={styles.addTitle}>Ajouter une opération</Text>
-      <Text style={styles.addSubtitle}>Jean saisit ses opérations ici. Aucun ordre n’est transmis.</Text>
-      <View style={styles.addActions}>
+    <Card nativeID="alto-history-add-panel" style={styles.addCard}>
+      <Text nativeID="alto-history-add-title" style={styles.addTitle}>Ajouter une opération</Text>
+      <Text nativeID="alto-history-add-subtitle" style={styles.addSubtitle}>Jean saisit ses opérations ici. Aucun ordre n’est transmis.</Text>
+      <View nativeID="alto-history-add-actions" style={[styles.addActions, wide && styles.addActionsWide]}>
         <ActionButton label="＋ Versement réalisé" tone="light" onPress={onVersement} />
         <ActionButton label="＋ Plan d’investissement" tone="light" onPress={onDca} />
       </View>
@@ -30,7 +32,8 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
     <SectionTitle title="Votre historique" action={<Text style={styles.count}>{operations.length} opération{operations.length === 1 ? "" : "s"}</Text>} />
     {operations.length === 0
       ? <Card><Text style={text.label}>Votre historique apparaîtra après votre première saisie.</Text></Card>
-      : operations.map((operation) => <Card key={operation.id} style={styles.operation}>
+      : <View nativeID="alto-history-list">{operations.map((operation) => <Card key={operation.id} nativeID={`alto-history-entry-${operation.id}`} style={styles.operation}>
+        <View nativeID={`alto-history-summary-${operation.id}`} style={styles.summary}>
         <View style={styles.operationHeader}>
           <View style={[styles.icon, operation.kind === "dca" ? styles.iconDca : styles.iconVersement]}>
             <Text style={styles.iconText}>{operation.kind === "dca" ? "↻" : "↑"}</Text>
@@ -42,17 +45,19 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
           <Text style={styles.kindTag}>{operation.kind === "dca" ? "PLAN" : "VERSEMENT"}</Text>
         </View>
         <Text style={styles.meta}>{operation.detail}</Text>
-        <View style={styles.allocations}>
+        </View>
+        <View nativeID={`alto-history-allocations-${operation.id}`} style={styles.allocations}>
           {operation.allocations.map((line) => <View key={line.id} style={styles.allocation}>
             <Text style={styles.dot}>●</Text>
             <InstrumentIdentity name={securities.find((security) => security.isin === line.isin)?.shortName ?? line.name} symbol={line.symbol ?? securities.find((security) => security.isin === line.isin)?.symbol} isin={line.isin} fallback="Fonds euro" titleStyle={styles.allocationName} />
             <Text style={styles.allocationAmount}>{euro(line.amount)}</Text>
           </View>)}
         </View>
+        <View nativeID={`alto-history-actions-${operation.id}`} style={styles.actionPanel}>
         {operation.kind === "dca" ? <Pressable onPress={() => onDcaDetails(operation)} accessibilityRole="button" style={styles.managePlan}>
           <Text style={styles.managePlanText}>Gérer le plan · voir les révisions</Text><Text style={styles.manageChevron}>›</Text>
         </Pressable> : null}
-        <View style={styles.actions}>
+        <View nativeID={`alto-history-cta-row-${operation.id}`} style={styles.actions}>
           <Pressable onPress={() => onValue(operation)} accessibilityRole="button" accessibilityLabel={`Valoriser ${operation.label} à une autre date`} style={({ pressed }) => [styles.actionButton, styles.actionButtonPrimary, pressed && styles.actionPressed]}>
             <Text style={styles.actionTitlePrimary}>Valoriser</Text>
             <Text style={styles.actionHintPrimary}>Voir à une autre date</Text>
@@ -62,7 +67,8 @@ export function HistoryScreen({ operations, securities, onValue, onCompare, comp
             <Text style={styles.actionHintSecondary}>Tester une hypothèse</Text>
           </Pressable> : null}
         </View>
-      </Card>)}
+        </View>
+      </Card>)}</View>}
     <Text style={styles.disclaimer}>Les données de cet environnement de démonstration sont conservées en mémoire pendant la session.</Text>
   </>;
 }
@@ -72,8 +78,11 @@ const styles = StyleSheet.create({
   addTitle: { color: p.onForest, fontSize: 17, fontWeight: "700" },
   addSubtitle: { color: p.onForest, fontSize: 12, lineHeight: 17 },
   addActions: { gap: 9, marginTop: 7 },
+  addActionsWide: { flexDirection: "row" },
   count: { color: p.muted, fontSize: 12 },
   operation: { gap: 13, marginBottom: 11 },
+  summary: { gap: 13 },
+  actionPanel: { gap: 13 },
   operationHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
   operationTitle: { flex: 1, gap: 4 },
   icon: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center" },

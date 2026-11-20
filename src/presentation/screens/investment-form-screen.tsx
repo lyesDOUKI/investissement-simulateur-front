@@ -23,7 +23,7 @@ export function InvestmentFormScreen(props: {
     <PageHeading eyebrow={kind === "dca" ? "Versements réguliers · DCA" : "Historique réel"}
       title={editingDca ? "Modifier le plan DCA" : kind === "dca" ? "Enregistrer un plan d’investissement" : "Enregistrer un versement"}
       subtitle={editingDca ? "Ajustez la mensualité et les supports. Les échéances déjà passées conserveront leur historique." : kind === "dca" ? "Un plan DCA investit régulièrement sur les supports choisis. Saisissez son montant, son calendrier et sa répartition ; chaque échéance sera détaillée ensuite." : "Ajoutez une trace d’un versement déjà effectué chez votre courtier."} />
-    <Card style={styles.card}>
+    <Card nativeID="alto-operation-parameters" style={styles.card}>
       <TextField label={kind === "dca" ? "Montant à chaque échéance" : "Montant versé"} value={total}
         onChangeText={props.onTotalChange} placeholder="Ex. 500,00" keyboardType="decimal-pad" suffix="€" helper={kind === "dca" ? "Montant total investi chaque mois, réparti entre les supports ci-dessous." : "Montant total de ce versement déjà réalisé."} />
       {!editingDca ? <DateField label={kind === "dca" ? "Date de démarrage du plan" : "Date réelle du versement"} value={date}
@@ -36,7 +36,7 @@ export function InvestmentFormScreen(props: {
     </Card>
     <View style={styles.heading}><View style={{ flex: 1 }}><Text style={styles.title}>Répartition entre les supports</Text>
       <Text style={styles.helper}>{props.autoSyncSingleSupport ? "Avec un seul support, son montant suit automatiquement le total. Ajoutez un support pour définir une répartition manuelle." : "Répartissez le montant total entre les supports. La somme des lignes doit correspondre au montant saisi."}</Text></View><Text style={styles.badge}>{lines.length} ligne{lines.length===1?"":"s"}</Text></View>
-    {lines.map((line, index) => <Card key={line.id} style={styles.card}>
+    <View nativeID="alto-investment-supports">{lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHead}><Text style={styles.title}>Ligne {index + 1}</Text>
         {lines.length > 1 ? <Pressable onPress={() => props.onRemoveLine(line.id)}><Text style={styles.remove}>Retirer</Text></Pressable> : null}</View>
       <View style={styles.pills}><Pill label="UC · ISIN" active={line.instrumentKind === "uc"} onPress={() => d(line)("instrumentKind", "uc")} />
@@ -55,7 +55,7 @@ export function InvestmentFormScreen(props: {
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(v) => d(line)("name", v)} placeholder="Ex. Fonds euro contrat" />
       </>}
       <TextField label="Montant sur ce support" value={String(line.amount || "")} onChangeText={(v) => d(line)("amount", v)} placeholder="0" keyboardType="decimal-pad" suffix="€" editable={!props.autoSyncSingleSupport} helper={props.autoSyncSingleSupport ? "100 % du montant total ; mis à jour automatiquement." : undefined} />
-    </Card>)}
+    </Card>)}</View>
     <Pressable onPress={props.onAddLine} style={styles.add}><Text style={styles.addText}>＋ Ajouter un support</Text></Pressable>
     <Card style={styles.summary}><Text style={styles.title}>{editingDca ? "Vérifiez la nouvelle configuration" : "À vérifier avant l’enregistrement"}</Text>
       <Text style={styles.helper}>{editingDca ? "Le montant mensuel doit correspondre au total réparti entre les supports." : "Chaque ligne correspond au montant affecté à un support. Vérifiez que leur somme correspond au montant du versement ou de chaque échéance."}</Text></Card>

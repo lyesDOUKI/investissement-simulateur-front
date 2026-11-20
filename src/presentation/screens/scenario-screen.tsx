@@ -53,6 +53,7 @@ export function ScenarioFormScreen(props: {
   return <>
     <PageHeading eyebrow="Comparaison · paramètres" title="Construire l’autre scénario" subtitle="Choisissez une date cible commune, puis modifiez les paramètres du scénario B. Votre opération reste le scénario A de référence." />
 
+    <View nativeID="alto-scenario-context">
     <Card style={styles.targetDate}>
       <Text style={styles.referenceEyebrow}>1 · DATE COMMUNE DE VALORISATION</Text>
       <Text style={styles.helper}>A et B seront valorisés à cette même date pour rendre leurs résultats comparables.</Text>
@@ -71,8 +72,9 @@ export function ScenarioFormScreen(props: {
         <Text style={styles.referenceMeta}>{totalLabel(line.amount)}{operation.kind === "dca" ? " / mois" : ""}</Text>
       </View>)}</View>
     </Card>
+    </View>
 
-    <Card style={styles.card}>
+    <Card nativeID="alto-scenario-parameters" style={styles.card}>
       <View style={styles.alternativeHeading}>
         <View style={styles.step}><Text style={styles.stepText}>B</Text></View>
         <View style={{ flex: 1, gap: 3 }}>
@@ -86,16 +88,18 @@ export function ScenarioFormScreen(props: {
         <View style={styles.pills}>{savedPlans.map((plan) => <Pill key={plan.id} label={formatDateLabel(plan.date) + " · " + plan.amount.toLocaleString("fr-FR") + " € / mois"} onPress={() => props.onUseSavedPlan(plan)} />)}</View>
       </View> : null}
 
-      <DateField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChange={props.onStartDateChange} helper={operation.kind === "dca" ? "Première date de référence du plan alternatif." : "Date à laquelle le versement alternatif aurait été réalisé."} />
-      <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} placeholder={operation.kind === "dca" ? "Ex. 200,00" : "Ex. 1 000,00"} />
-      {operation.kind === "dca" ? <>
-        <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
-        <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" />
-      </> : null}
+      <View nativeID="alto-scenario-parameter-fields">
+        <DateField label={operation.kind === "dca" ? "Date de mise en place du plan B" : "Date d’exécution du versement B"} value={startDate} onChange={props.onStartDateChange} helper={operation.kind === "dca" ? "Première date de référence du plan alternatif." : "Date à laquelle le versement alternatif aurait été réalisé."} />
+        <TextField label={operation.kind === "dca" ? "Montant mensuel" : "Montant du versement"} value={total} onChangeText={props.onTotalChange} keyboardType="decimal-pad" suffix={operation.kind === "dca" ? "€ / mois" : "€"} placeholder={operation.kind === "dca" ? "Ex. 200,00" : "Ex. 1 000,00"} />
+        {operation.kind === "dca" ? <>
+          <TextField label="Jour de prélèvement" value={executionDay} onChangeText={props.onExecutionDayChange} keyboardType="number-pad" />
+          <TextField label="Délai avant exécution (jours ouvrés)" value={delayBusinessDays} onChangeText={props.onDelayChange} keyboardType="number-pad" />
+        </> : null}
+      </View>
     </Card>
 
     <SectionTitle title="3 · Répartition du scénario B" action={<Text style={styles.lineCount}>{lines.length} ligne{lines.length === 1 ? "" : "s"}</Text>} />
-    {lines.map((line, index) => <Card key={line.id} style={styles.card}>
+    <View nativeID="alto-scenario-supports">{lines.map((line, index) => <Card key={line.id} style={styles.card}>
       <View style={styles.lineHeader}>
         <Text style={styles.lineTitle}>Support {index + 1}</Text>
         {lines.length > 1 ? <Pressable onPress={() => props.onRemoveLine(line.id)} hitSlop={8}><Text style={styles.remove}>Retirer</Text></Pressable> : null}
@@ -118,11 +122,12 @@ export function ScenarioFormScreen(props: {
         <TextField label="Nom du fonds euro" value={line.name ?? ""} onChangeText={(value) => update(line, "name", value)} placeholder="Fonds euro du contrat" />
       </>}
       <TextField label="Montant affecté" value={String(line.amount || "")} onChangeText={(value) => update(line, "amount", value)} keyboardType="decimal-pad" suffix="€" placeholder="Ex. 100,00" />
-    </Card>)}
+    </Card>)}</View>
     <Pressable onPress={props.onAddLine} style={styles.addLine}><Text style={styles.addText}>＋ Ajouter un support au scénario B</Text></Pressable>
     {needsProjection && scenarioIsins.length > 0 ? <Card style={styles.projectionCard}>
       <Text style={styles.sectionTitle}>4 · Hypothèses de rendement à la date cible</Text>
       <Text style={styles.helper}>Indiquez le rendement annuel envisagé jusqu’à la date cible. Un ISIN commun à A et B utilise le même taux dans les deux scénarios.</Text>
+      <View nativeID="alto-scenario-assumptions">
       {scenarioIsins.map((isin) => {
         const inA = originalAllocations.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
         const inB = lines.some((allocation) => allocation.instrumentKind === "uc" && allocation.isin === isin);
@@ -133,6 +138,7 @@ export function ScenarioFormScreen(props: {
         return <TextField key={isin} label={label} value={props.assumptions[isin] ?? ""}
           onChangeText={(value) => props.onAssumptionChange(isin, value)} keyboardType="decimal-pad" suffix="% / an" placeholder="Ex. 6" />;
       })}
+      </View>
       <Text style={styles.helper}>Pour le fonds euro, le service de calcul applique son taux prévu ; aucune hypothèse n’est à saisir.</Text>
     </Card> : null}
     <Card style={styles.note}><Text style={styles.noteTitle}>Une comparaison utile</Text><Text style={styles.helper}>Le résultat présente côte à côte l’effort investi, les valeurs retournées et les écarts. Il ne désigne pas un plan « meilleur » sans tenir compte de vos critères.</Text></Card>

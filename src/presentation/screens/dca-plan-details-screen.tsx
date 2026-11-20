@@ -33,13 +33,13 @@ export function DcaPlanDetailsScreen({ operation, securities, confirmation, comp
     </Card>
 
     <SectionTitle title="Historique des révisions" action={<Text style={styles.count}>{revisions.length} version{revisions.length === 1 ? "" : "s"}</Text>} />
-    {revisions.length === 0 ? <Card><Text style={styles.meta}>L’historique des versions n’est pas fourni pour ce plan.</Text></Card> : revisions.map((revision) => <Card key={revision.revisionNumber} style={styles.revisionCard}>
+    {revisions.length === 0 ? <Card><Text style={styles.meta}>L’historique des versions n’est pas fourni pour ce plan.</Text></Card> : <View nativeID="alto-dca-revisions-list">{revisions.map((revision) => <Card key={revision.revisionNumber} style={styles.revisionCard}>
       <View style={styles.revisionHeader}><View style={styles.revisionIdentity}><Text style={styles.revisionTitle}>Révision {revision.revisionNumber}</Text><Text style={styles.meta}>Enregistrée le {formatDateLabel(revision.recordedAt)}</Text></View><Text style={styles.revisionAmount}>{euro(revision.monthlyAmount)} / mois</Text></View>
       <View style={styles.effective}><Text style={styles.effectiveLabel}>À partir de l’échéance</Text><Text style={styles.effectiveValue}>n° {revision.effectiveFromInstallmentNumber}</Text></View>
       <View style={styles.divider} />
       <Text style={styles.sectionLabel}>Répartition de cette version</Text>
       <AllocationRows allocations={revision.allocations} securities={securities} />
-    </Card>)}
+    </Card>)}</View>}
     {comparisonEnabled && revisions.length > 1 ? <Pressable onPress={onCompareRevisions} accessibilityRole="button" style={({ pressed }) => [styles.compareButton, pressed && styles.pressed]}>
       <View style={styles.compareCopy}><Text style={styles.compareTitle}>Comparer deux révisions</Text><Text style={styles.meta}>Simuler deux configurations à une même date future</Text></View><Text style={styles.compareArrow}>›</Text>
     </Pressable> : null}

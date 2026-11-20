@@ -37,7 +37,7 @@ export function DcaRevisionComparisonScreen({ operation, securities, revisionA, 
     </Card>
 
     <Text style={styles.sectionTitle}>Choisissez les deux révisions</Text>
-    {revisions.map((revision) => <Card key={revision.revisionNumber} style={styles.revisionCard}>
+    <View nativeID="alto-revision-choices">{revisions.map((revision) => <Card key={revision.revisionNumber} style={styles.revisionCard}>
       <View style={styles.revisionHeader}><View style={styles.revisionIdentity}><Text style={styles.revisionTitle}>Révision {revision.revisionNumber}</Text><Text style={styles.meta}>Enregistrée le {formatDateLabel(revision.recordedAt)}</Text></View><Text style={styles.amount}>{euro(revision.monthlyAmount)} / mois</Text></View>
       <View style={styles.allocationList}>{revision.allocations.map((allocation) => {
         const security = securities.find((item) => item.isin === allocation.isin);
@@ -47,11 +47,12 @@ export function DcaRevisionComparisonScreen({ operation, securities, revisionA, 
         <SelectButton label="Scénario A" selected={revisionA === revision.revisionNumber} disabled={revisionB === revision.revisionNumber} onPress={() => onSelectA(revision.revisionNumber)} />
         <SelectButton label="Scénario B" selected={revisionB === revision.revisionNumber} disabled={revisionA === revision.revisionNumber} onPress={() => onSelectB(revision.revisionNumber)} />
       </View>
-    </Card>)}
+    </Card>)}</View>
     <Pressable onPress={onSwap} accessibilityRole="button" style={styles.swap}>
       <Text style={styles.swapText}>Inverser A et B</Text>
     </Pressable>
 
+    <View nativeID="alto-revision-projection-settings">
     <Card style={styles.target}>
       <Text style={styles.sectionTitle}>Date de valorisation commune</Text>
       <Text style={styles.body}>Choisissez une seule date future pour les deux scénarios.</Text>
@@ -61,6 +62,7 @@ export function DcaRevisionComparisonScreen({ operation, securities, revisionA, 
     {supports.length > 0 ? <Card style={styles.assumptions}>
       <Text style={styles.sectionTitle}>Hypothèses de rendement</Text>
       <Text style={styles.body}>Saisissez un taux annuel pour chaque UC enregistrée sur le plan, y compris celles issues des échéances passées. Un même ISIN utilise le même taux dans A et B. Le fonds euro suit le taux du service de calcul.</Text>
+      <View nativeID="alto-revision-assumptions">
       {supports.map((support) => {
         const security = securities.find((item) => item.isin === support.isin);
         const title = support.symbol ?? security?.symbol ?? support.name ?? security?.shortName ?? support.isin;
@@ -68,7 +70,9 @@ export function DcaRevisionComparisonScreen({ operation, securities, revisionA, 
         const label = `${title}${name && name !== title ? ` · ${name}` : ""} · ISIN ${support.isin}`;
         return <TextField key={support.isin} label={label} value={assumptions[support.isin] ?? ""} onChangeText={(value) => onAssumptionChange(support.isin, value)} keyboardType="decimal-pad" suffix="% / an" placeholder="Ex. 6" />;
       })}
+      </View>
     </Card> : null}
+    </View>
 
     <Card style={styles.note}><Text style={styles.noteTitle}>À garder en tête</Text><Text style={styles.body}>Une projection illustre une hypothèse, ce n’est pas une prévision. Les résultats sont fournis par le service de calcul et peuvent différer des données du courtier.</Text></Card>
     {error ? <Text style={styles.error}>{error}</Text> : null}

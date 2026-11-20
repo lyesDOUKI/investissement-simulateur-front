@@ -24,7 +24,7 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
     </Card> : null}
 
     <SectionTitle title={operation.kind === "dca" ? "Synthèse par support" : "Détail du versement"} />
-    {result.allocations.map((allocation) => <Card key={allocation.instrumentKind + allocation.isin} style={styles.card}>
+    <View nativeID="alto-valuation-supports">{result.allocations.map((allocation) => <Card key={allocation.instrumentKind + allocation.isin} style={styles.card}>
       <View style={styles.row}><InstrumentIdentity name={allocation.name} symbol={allocation.symbol} isin={allocation.instrumentKind === "uc" ? allocation.isin : null} fallback="Fonds euro" titleStyle={styles.title} /><Text style={styles.value}>{euro(allocation.value)}</Text></View>
       <View style={styles.badgeRow}><StatusBadge status={allocation.status} /></View>
       <Row label="Montant placé" value={euro(allocation.invested)} />
@@ -34,11 +34,11 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
       {allocation.status === "projected" ? <ProjectionAssumptions allocation={allocation} /> : null}
       <Row label={`Valeur à la date cible · ${formatDateLabel(result.valuationDate)}`} value={euro(allocation.value)} />
       <View style={styles.row}><Text style={styles.meta}>Gain / perte depuis les versements</Text><Text style={allocation.gain >= 0 ? styles.positive : styles.negative}>{allocation.gain >= 0 ? "+" : ""}{euro(allocation.gain)}</Text></View>
-    </Card>)}
+    </Card>)}</View>
 
     {result.installments.length > 0 ? <>
       <SectionTitle title="Détail des échéances" />
-      {result.installments.map((installment, index) => <Card key={`${installment.dueDate}-${installment.executionDate}-${index}`} style={styles.card}>
+      <View nativeID="alto-valuation-installments">{result.installments.map((installment, index) => <Card key={`${installment.dueDate}-${installment.executionDate}-${index}`} style={styles.card}>
         <View style={styles.installmentHeader}>
           <View style={styles.badgeRow}><Text style={styles.title}>Échéance du {formatDateLabel(installment.dueDate)}</Text><InstallmentBadge nature={installment.nature} /></View>
           <Text style={styles.meta}>{executionLabel(installment)} · {euro(installment.amount)} au total</Text>
@@ -54,7 +54,7 @@ export function ValuationDetailsScreen({ operation, result }: { operation: Opera
           {line.status === "projected" ? <InstallmentAssumptions line={line} /> : null}
         </View>)}
         {index < result.installments.length - 1 ? <Divider /> : null}
-      </Card>)}
+      </Card>)}</View>
     </> : null}
   </>;
 }

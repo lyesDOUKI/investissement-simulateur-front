@@ -14,11 +14,11 @@ export function PageHeading({
   action?: ReactNode;
 }) {
   return (
-    <View style={ui.heading}>
+    <View nativeID="alto-page-heading" style={ui.heading}>
       <View style={{ flex: 1, gap: 5 }}>
         {eyebrow ? <Text style={ui.eyebrow}>{eyebrow}</Text> : null}
-        <Text style={ui.pageTitle}>{title}</Text>
-        {subtitle ? <Text style={ui.subtitle}>{subtitle}</Text> : null}
+        <Text nativeID="alto-page-title" accessibilityRole="header" style={ui.pageTitle}>{title}</Text>
+        {subtitle ? <Text nativeID="alto-page-subtitle" style={ui.subtitle}>{subtitle}</Text> : null}
       </View>
       {action}
     </View>
@@ -28,11 +28,13 @@ export function PageHeading({
 export function Card({
   children,
   style,
+  nativeID,
 }: {
   children: ReactNode;
   style?: object;
+  nativeID?: string;
 }) {
-  return <View style={[ui.card, style]}>{children}</View>;
+  return <View nativeID={nativeID} style={[ui.card, style]}>{children}</View>;
 }
 
 export function SectionTitle({
@@ -44,7 +46,7 @@ export function SectionTitle({
 }) {
   return (
     <View style={ui.sectionHeading}>
-      <Text style={ui.sectionTitle}>{title}</Text>
+      <Text accessibilityRole="header" style={ui.sectionTitle}>{title}</Text>
       {action}
     </View>
   );
@@ -65,6 +67,8 @@ export function ActionButton({
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading }}
       disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
@@ -76,16 +80,23 @@ export function ActionButton({
         pressed && !disabled && !loading && { opacity: 0.78, transform: [{ scale: 0.99 }] },
       ]}
     >
-      <Text
-        style={[
-          ui.actionText,
-          tone === "light" && ui.actionTextLight,
-          tone === "quiet" && ui.actionTextQuiet,
-          (disabled || loading) && { color: p.muted },
-        ]}
-      >
-        {loading ? <View style={ui.loadingContent}><ActivityIndicator size="small" color={tone === "dark" ? p.onForest : tone === "light" ? p.forest : p.forestLight} /><Text style={[ui.actionText, tone === "light" && ui.actionTextLight, tone === "quiet" && ui.actionTextQuiet]}>Traitement…</Text></View> : label}
-      </Text>
+      {loading ? (
+        <View style={ui.loadingContent}>
+          <ActivityIndicator size="small" color={tone === "dark" ? p.onForest : tone === "light" ? p.forest : p.forestLight} />
+          <Text style={[ui.actionText, tone === "light" && ui.actionTextLight, tone === "quiet" && ui.actionTextQuiet]}>Traitement…</Text>
+        </View>
+      ) : (
+        <Text
+          style={[
+            ui.actionText,
+            tone === "light" && ui.actionTextLight,
+            tone === "quiet" && ui.actionTextQuiet,
+            disabled && { color: p.muted },
+          ]}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -120,6 +131,8 @@ export function TextField({
         <TextInput
           value={value}
           onChangeText={onChangeText}
+          accessibilityLabel={label}
+          accessibilityHint={helper}
           editable={editable}
           placeholder={placeholder}
           placeholderTextColor={p.placeholder}
@@ -151,7 +164,12 @@ export function Pill({
   if (!onPress)
     return <View style={[ui.pill, active && ui.pillActive]}>{content}</View>;
   return (
-    <Pressable onPress={onPress} style={[ui.pill, active && ui.pillActive]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      onPress={onPress}
+      style={[ui.pill, active && ui.pillActive]}
+    >
       {content}
     </Pressable>
   );

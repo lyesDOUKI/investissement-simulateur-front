@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import type { ComparisonDataStatus, ComparisonInstallment, ComparisonParameters, ComparisonScenario, InvestmentComparison, Operation } from "@/domain/models/operation";
 import { ActionButton, Card, PageHeading, SectionTitle } from "@/presentation/components/investment-ui";
 import { palette as p } from "@/presentation/theme";
@@ -19,7 +19,8 @@ export function ComparisonResultScreen({ operation, result, onAdjust, scenarioTi
   projectionStartInstallmentNumber?: number;
   isRevisionComparison?: boolean;
 }) {
-  const wide = useWindowDimensions().width >= 760;
+  const viewportWidth = useWindowDimensions().width;
+  const wide = Platform.OS !== "web" && viewportWidth >= 760;
   const isDca = operation.kind === "dca";
   return <>
     <PageHeading eyebrow="Résultat de simulation" title={scenarioTitles ? "Comparer deux révisions" : "Comparer les deux scénarios"} subtitle="Les deux scénarios sont valorisés à la même date. Commencez par l’écart, puis ouvrez les détails pour comprendre ce qui le compose." />
@@ -41,7 +42,7 @@ export function ComparisonResultScreen({ operation, result, onAdjust, scenarioTi
     <View style={styles.topAction}><ActionButton label="Modifier les hypothèses" tone="light" onPress={onAdjust} /></View>
 
     <SectionTitle title="Les deux scénarios" action={<Text style={styles.commonDate}>Même date · {formatDateLabel(result.valuationDate)}</Text>} />
-    <View style={[styles.scenarios, wide && styles.scenariosWide]}>
+    <View nativeID="alto-comparison-scenarios" style={[styles.scenarios, wide && styles.scenariosWide]}>
       <ScenarioCard title={scenarioTitles?.original ?? `A · ${isDca ? "Plan de référence" : "Versement de référence"}`} scenario={result.original} isDca={isDca} tag={isRevisionComparison ? "RÉVISION" : "ENREGISTRÉ"} />
       <ScenarioCard title={scenarioTitles?.alternative ?? `B · ${isDca ? "Plan alternatif" : "Versement alternatif"}`} scenario={result.alternative} isDca={isDca} highlighted tag={isRevisionComparison ? "RÉVISION" : "HYPOTHÈSE"} />
     </View>
